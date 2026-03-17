@@ -5,7 +5,7 @@
 - 项目名称：`typora-plugin-bibtex-citation`
 - 当前目标仓库名为 `typora-plugin-bibtex-citation`；但插件运行标识、受控注释前缀与当前工作区目录仍可能暂时保留 `bibtex-citation`
 - 项目类型：Typora Community Plugin 插件
-- 当前最新已发布版本：`0.3.4`
+- 当前最新已发布版本：`0.3.5`
 - 主要功能：在 Typora 的方括号引用语法中输入 `@query` 时，从配置的多个 BibTeX 文件中检索文献条目并插入引用键
 - 运行依赖：
   - Typora Community Plugin Framework
@@ -29,6 +29,7 @@
 - [`style.css`](style.css)：建议列表、侧边栏和活动栏按钮的样式层；与宿主 Typora 样式存在直接耦合，改动时要留意覆盖关系
 - [`manifest.json`](manifest.json) / [`package.json`](package.json)：插件元数据与依赖入口，分别影响 Typora 识别和本地 Node 运行环境；当前仓库/包名与插件 `id` 不一定相同
 - [`README.md`](README.md)：对外使用说明；能力边界、按钮语义和支持矩阵变更后要同步更新
+- [`docs/behavior-rules.md`](docs/behavior-rules.md)：当前行为规则单点说明，集中维护路径解析、引用源、受控 citation、bibliography 与侧边栏/设置页边界
 - [`tests/unit/`](tests/unit)：正式单元测试入口，当前覆盖 BibTeX 数据层、CSL 主链路、当前文档状态、建议器、设置页、侧边栏与插件薄封装
 - [`tests/support/`](tests/support) / [`tests/fixtures/`](tests/fixtures)：测试辅助环境与真实 CSL 样式夹具；`tests/output/` 不纳入版本控制
 
@@ -56,6 +57,8 @@
 - CSL 工作流已接通“渲染/更新引用、恢复引用、插入/更新参考文献、删除参考文献”这条闭环；受控 citation 块已成为长期持久真源
 - 当前开发重点已从建议器交互逐步转向 CSL 能力扩展与 bibliography 工作流完善，尤其是复杂 citation 语法与真机回归稳定性
 - 设置页、侧边栏、显示语言与文档统计的联动已经基本成型，但关键体验仍需要在 Typora 真机中持续回归
+- 当前 README 已收敛到安装、配置、快速使用与最小排查；更细的行为规则统一沉淀在 `docs/behavior-rules.md`
+- 当前平台结论仅限 Windows 真机；Linux 与 macOS 尚未完成系统验证，不应在对外文档中做兼容性承诺
 - 仓库当前已具备受版本控制的 Node 单元测试目录；`tests/` 采用 `unit / support / fixtures` 分层，`tests/output/` 仅保留本地产物
 - 当前 `npm test` 已覆盖 86 条单元测试，核心逻辑层与大部分高宿主耦合层都已有回归保护；已补到 `plugin.onload()`、调度链、`BibEntryStore` 异常分支与设置页关键非法输入
 - `package.json` 当前仅保留占位性质的 `npm run build`，插件运行不依赖原生构建步骤
@@ -99,7 +102,7 @@
 
 - HTML 注释 `<!-- ... -->` 中的 `[@key]` 会在闭合块扫描阶段被整体忽略；这条规则同时影响统计、校验、citation 渲染和 bibliography 提取
 - `tests/` 当前已纳入版本控制；新增测试优先落在 `tests/unit/<domain>/`，共享 mock 放到 `tests/support/`，真实样式夹具放到 `tests/fixtures/`
-- `README.md` 已承担对外能力说明；只要后续继续扩 locator、note-style、bibliography 或按钮语义，就要同步更新 README 的支持矩阵与使用说明
+- `README.md` 负责安装、快速上手与最小排查；只要行为边界变化，就要同时同步 `README.md` 与 `docs/behavior-rules.md`
 
 ## 计划
 

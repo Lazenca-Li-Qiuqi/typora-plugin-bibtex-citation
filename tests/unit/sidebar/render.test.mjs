@@ -44,9 +44,6 @@ function createPlugin(overrides = {}) {
           unavailable: "Unavailable",
           filesTitle: "Files",
           empty: "Empty",
-          triggerHint: "Trigger",
-          citationCountHint: "Count hint",
-          renderHint: "Render hint",
           loadErrorPrefix: "Load error: ",
           invalidCitationPrefix: "Invalid key: ",
           invalidCitationBlockPrefix: "Invalid block: ",
@@ -84,7 +81,7 @@ test("BibCitationSidebarPanel.render 在 allowLibraryLoad=false 时显示 unavai
   assert.match(text, /a\.bib/);
   assert.match(text, /b\.bib/);
   assert.match(text, /Refresh/);
-  assert.match(text, /Render hint/);
+  assert.doesNotMatch(text, /Render hint|Trigger|Count hint/);
 });
 
 test("BibCitationSidebarPanel.render 在 citationState 出错时显示错误摘要", () => {

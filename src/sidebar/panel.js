@@ -99,9 +99,6 @@ export class BibCitationSidebarPanel extends SidebarPanel {
       loadError ? createError(t.loadErrorPrefix + loadError) : null,
       citationState.error ? createError(formatCitationStateError(t, citationState.error)) : null,
       paths.length ? createPathList(paths, t.filesTitle) : createEmpty(t.empty),
-      createFootnote(t.triggerHint),
-      createFootnote(t.citationCountHint),
-      createFootnote(t.renderHint),
     ].filter(Boolean);
 
     this.containerEl.innerHTML = "";
@@ -295,13 +292,6 @@ function createPathList(paths, titleText) {
 
   wrapper.append(title, list);
   return wrapper;
-}
-
-function createFootnote(text) {
-  const el = document.createElement("p");
-  el.className = "bibtex-sidebar-footnote";
-  el.textContent = text;
-  return el;
 }
 
 function getPathBaseLabel(pathBase, labels) {

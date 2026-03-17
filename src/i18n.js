@@ -45,11 +45,6 @@ const en = {
     removeBibliographyNoChanges: "No managed bibliography block was found.",
     removeBibliographySuccess: "Removed the managed bibliography block.",
     bibliographyHeading: "References",
-    triggerHint:
-      "Type [@query] to search the configured BibTeX files. For duplicate keys, the earlier file wins.",
-    citationCountHint: "Counts show unique keys and total bracket citations.",
-    renderHint:
-      "Render / Update Citations processes both visible strict blocks like [@key] or [@a; @b] and existing managed citation blocks, then rewrites them as managed citation blocks using the current CSL style. Restore turns those managed blocks back into raw [@key]. Insert / Update Bibliography reads both visible [@key] blocks and managed citation blocks. Remove Bibliography only deletes the managed block created by this plugin. Unknown keys or invalid syntax stop citation and bibliography updates.",
     citationCountFormat: "{unique} unique / {total} total",
     filesTitle: "BibTeX Files",
   },
@@ -128,10 +123,6 @@ const zhCn = {
     removeBibliographyNoChanges: "当前没有可删除的受控参考文献块。",
     removeBibliographySuccess: "已删除受控参考文献块。",
     bibliographyHeading: "参考文献",
-    triggerHint: "输入 [@query] 即可检索已配置的 BibTeX 文件；若 key 重复，优先采用更靠前的文件。",
-    citationCountHint: "统计显示唯一 key 数和总引用次数。",
-    renderHint:
-      "渲染/更新引用会同时处理严格形式的可见 [@key] / [@a; @b] 和已有受控 citation 块，并按当前 CSL 样式统一改写成最新的受控 citation 块。恢复会把这些受控块还原成原始 [@key]。插入/更新参考文献会同时读取正文里可见的 [@key] 和受控 citation 块。删除参考文献只会删除本插件生成的受控块。遇到未知 key 或非法语法时，引用更新和插入/更新参考文献都会直接停止。",
     citationCountFormat: "共 {unique} 条 / {total} 次",
     filesTitle: "BibTeX 文件",
   },
