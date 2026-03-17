@@ -63,6 +63,10 @@ export function createMockElement(tagName = "div") {
         handler(event);
       }
     },
+    empty() {
+      this.children = [];
+      this.innerHTML = "";
+    },
     querySelector() {
       return null;
     },
@@ -77,6 +81,17 @@ export function createMockElement(tagName = "div") {
     },
   };
   return element;
+}
+
+export function collectTextContent(node) {
+  if (!node) {
+    return "";
+  }
+  const ownText = typeof node.textContent === "string" ? node.textContent : "";
+  const childText = Array.isArray(node.children)
+    ? node.children.map((child) => collectTextContent(child)).join(" ")
+    : "";
+  return `${ownText} ${childText}`.trim();
 }
 
 /**

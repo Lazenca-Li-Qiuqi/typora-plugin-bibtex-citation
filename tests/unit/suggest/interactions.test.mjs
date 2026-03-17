@@ -142,3 +142,84 @@ test("registerSuggestInteractions 的回车兜底会应用第一条建议", () =
   assert.deepEqual(range.setStartCalls.length, 1);
   assert.deepEqual(range.setEndCalls.length, 1);
 });
+
+test("registerSuggestInteractions 的 pointer 兜底会应用点击项，并在 click 后清空抑制状态", () => {
+  const plugin = createPlugin();
+  let pasted = "";
+  globalThis.window.editor = {
+    autoComplete: {
+      state: {
+        anchor: {
+          containerNode: { firstChild: {} },
+          start: 5,
+          end: 9,
+        },
+      },
+      hide() {},
+    },
+    selection: {
+      getRangy() {
+        return {
+          setStart() {},
+          setEnd() {},
+        };
+      },
+      setRange() {},
+    },
+    UserOp: {
+      pasteHandler(_, text) {
+        pasted = text;
+      },
+    },
+  };
+
+  registerSuggestInteractions(plugin);
+
+  const itemEl = {
+    getAttribute() {
+      return "smith2024";
+    },
+    closest(selector) {
+      return selector === ".auto-suggest-container" ? {} : null;
+    },
+  };
+  const target = {
+    closest(selector) {
+      return selector === ".bibtex-cite-item[data-bibtex-key]" ? itemEl : null;
+    },
+  };
+
+  plugin._handleSuggestPointerDown({
+    target,
+    preventDefault() {},
+    stopPropagation() {},
+    stopImmediatePropagation() {},
+  });
+  assert.equal(pasted, "@smith2024");
+  assert.equal(plugin._suppressPointerEventsUntil > Date.now(), true);
+
+  plugin._handleSuggestPointerFinish({
+    type: "click",
+    preventDefault() {},
+    stopPropagation() {},
+    stopImmediatePropagation() {},
+  });
+  assert.equal(plugin._suppressPointerEventsUntil, 0);
+});
+
+test("registerSuggestInteractions 的 schedule clamp 会修正越界建议框位置", () => {
+  const plugin = createPlugin();
+  const container = new HTMLElement();
+  container.style = {};
+  container.getBoundingClientRect = () => ({ left: 900, right: 1400, height: 100 });
+
+  globalThis.document.querySelectorAll = (selector) => (
+    selector === ".auto-suggest-container" ? [container] : []
+  );
+
+  registerSuggestInteractions(plugin);
+  plugin._scheduleSuggestClamp();
+
+  assert.equal(container.style.maxWidth, "672px");
+  assert.match(container.style.transform, /translateX\(-132px\)/);
+});

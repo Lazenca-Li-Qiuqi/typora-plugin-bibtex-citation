@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.3.3 - 2026-03-17
+
+- 继续补齐高宿主耦合层的单元测试，新增设置页行为、侧边栏 `render()` 关键分支，以及建议器 pointer / viewport 兜底逻辑的测试覆盖
+- 扩展测试辅助环境，使最小 DOM / Typora mock 能支撑设置页、侧边栏与交互层的轻量回归
+- 同步 README、AGENTS 与 LAST_RUN 中的测试覆盖状态说明；当前 `npm test` 已包含 79 条单元测试
+
 ## 0.3.2 - 2026-03-17
 
 - 正式将 `tests/` 纳入版本控制，按 `unit / support / fixtures` 分层整理测试目录，并移除原有 smoke 脚本入口，统一收敛到 `npm test`
