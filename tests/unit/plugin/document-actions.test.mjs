@@ -169,3 +169,53 @@ test("removeCurrentDocumentBibliography 在无改动时不调用 reloadContent",
   assert.equal(result.changed, false);
   assert.equal(called, false);
 });
+
+test("renderCurrentDocumentCitations 在缺少 reloadContent 时抛错", async () => {
+  const plugin = createPlugin("Text [@smith2024]");
+  globalThis.window.File = {};
+
+  await assert.rejects(
+    () => plugin.renderCurrentDocumentCitations(),
+    /reload unavailable/,
+  );
+});
+
+test("reloadLibraryNow 会失效缓存、重读文献库并刷新侧边栏", () => {
+  const plugin = createPlugin("Text");
+  let invalidated = 0;
+  let loaded = 0;
+  plugin.invalidateLibrary = () => {
+    invalidated += 1;
+  };
+  plugin.getBibEntries = () => {
+    loaded += 1;
+    return [];
+  };
+
+  plugin.reloadLibraryNow();
+
+  assert.equal(invalidated, 1);
+  assert.equal(loaded, 1);
+  assert.equal(plugin.sidebarPanel.renderCalls, 1);
+});
+
+test("scheduleSidebarRefresh 与 scheduleCitationStateRefresh 会避免重复排队", () => {
+  const plugin = createPlugin("Text");
+  const queued = [];
+  globalThis.window.requestAnimationFrame = (callback) => {
+    queued.push(callback);
+  };
+
+  plugin.scheduleSidebarRefresh();
+  plugin.scheduleSidebarRefresh();
+  plugin.scheduleCitationStateRefresh();
+  plugin.scheduleCitationStateRefresh();
+
+  assert.equal(queued.length, 2);
+
+  queued[0]();
+  queued[1]();
+
+  assert.equal(plugin.sidebarPanel.renderCalls, 2);
+  assert.equal(plugin.documentState.clearCalls, 1);
+});

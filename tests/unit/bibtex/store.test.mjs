@@ -79,3 +79,36 @@ test("BibEntryStore 会复用 mergedEntries 缓存并可通过 clear 重置", ()
   assert.notStrictEqual(third, first);
   assert.equal(third[0].key, "alpha");
 });
+
+test("BibEntryStore 在文件 mtime 变化后会更新缓存内容", async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "bib-store-"));
+  const bib = path.join(tempDir, "library.bib");
+  writeFile(bib, `@article{alpha, title={Alpha}, author={Smith, John}, year={2024}}`);
+
+  const store = new BibEntryStore(createPlugin([bib]));
+  const first = store.getEntries();
+  assert.equal(first[0].title, "Alpha");
+
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  writeFile(bib, `@article{alpha, title={Alpha Updated}, author={Smith, John}, year={2024}}`);
+  store.mergedEntries = null;
+  store.mergedEntryKeySet = null;
+
+  const second = store.getEntries();
+  assert.equal(second[0].title, "Alpha Updated");
+});
+
+test("BibEntryStore 遇到缺失文件时跳过并输出警告", () => {
+  const warns = [];
+  const originalWarn = console.warn;
+  console.warn = (...args) => warns.push(args.join(" "));
+  try {
+    const missing = path.join(os.tmpdir(), "definitely-missing-file.bib");
+    const store = new BibEntryStore(createPlugin([missing]));
+    const entries = store.getEntries();
+    assert.deepEqual(entries, []);
+    assert.equal(warns.some((line) => line.includes("missing: ")), true);
+  } finally {
+    console.warn = originalWarn;
+  }
+});

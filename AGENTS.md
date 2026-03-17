@@ -5,7 +5,7 @@
 - 项目名称：`typora-plugin-bibtex-citation`
 - 当前目标仓库名为 `typora-plugin-bibtex-citation`；但插件运行标识、受控注释前缀与当前工作区目录仍可能暂时保留 `bibtex-citation`
 - 项目类型：Typora Community Plugin 插件
-- 当前最新已发布版本：`0.3.3`
+- 当前最新已发布版本：`0.3.4`
 - 主要功能：在 Typora 的方括号引用语法中输入 `@query` 时，从配置的多个 BibTeX 文件中检索文献条目并插入引用键
 - 运行依赖：
   - Typora Community Plugin Framework
@@ -57,7 +57,7 @@
 - 当前开发重点已从建议器交互逐步转向 CSL 能力扩展与 bibliography 工作流完善，尤其是复杂 citation 语法与真机回归稳定性
 - 设置页、侧边栏、显示语言与文档统计的联动已经基本成型，但关键体验仍需要在 Typora 真机中持续回归
 - 仓库当前已具备受版本控制的 Node 单元测试目录；`tests/` 采用 `unit / support / fixtures` 分层，`tests/output/` 仅保留本地产物
-- 当前 `npm test` 已覆盖 79 条单元测试，核心逻辑层与大部分高宿主耦合层都已有回归保护
+- 当前 `npm test` 已覆盖 86 条单元测试，核心逻辑层与大部分高宿主耦合层都已有回归保护；已补到 `plugin.onload()`、调度链、`BibEntryStore` 异常分支与设置页关键非法输入
 - `package.json` 当前仅保留占位性质的 `npm run build`，插件运行不依赖原生构建步骤
 
 ### 已知实现特征

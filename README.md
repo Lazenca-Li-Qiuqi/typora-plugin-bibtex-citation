@@ -6,7 +6,7 @@
 
 本项目 fork 自 `adam-coates/typora-plugin-zotero`，并在此基础上逐步调整为面向本地 BibTeX 文件的引用工作流。
 
-![Version](https://img.shields.io/badge/version-v0.3.3-2f6feb)
+![Version](https://img.shields.io/badge/version-v0.3.4-2f6feb)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-1f883d)
 ![Node](https://img.shields.io/badge/node-%3E%3D22-8a2be2)
 ![Typora Plugin](https://img.shields.io/badge/Typora-Community%20Plugin-0a7ea4)
@@ -64,7 +64,7 @@ git clone https://github.com/Lazenca-Liqiuqi/typora-plugin-bibtex-citation.git t
 npm test
 ```
 
-当前测试入口默认执行 `tests/unit/` 下的正式单元测试；`tests/fixtures/` 中的 CSL 样式文件会作为真实样式夹具参与回归。当前测试总量为 79 条。
+当前测试入口默认执行 `tests/unit/` 下的正式单元测试；`tests/fixtures/` 中的 CSL 样式文件会作为真实样式夹具参与回归。当前测试总量为 86 条，已覆盖 BibTeX 数据层、CSL 主链路、当前文档状态、建议器、设置页、侧边栏，以及 `plugin.onload()`、调度链和异常分支。
 
 ### 启用插件
 
