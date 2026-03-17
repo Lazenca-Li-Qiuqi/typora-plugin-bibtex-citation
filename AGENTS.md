@@ -18,7 +18,10 @@
 ## 目录结构
 
 - [`main.js`](main.js)：轻量入口，只负责转发到 [`src/plugin.js`](src/plugin.js)，尽量不要把业务逻辑回填到这里
-- [`src/plugin.js`](src/plugin.js)：插件装配层，连接设置页、BibTeX 存储、建议器、侧边栏与 CSL 操作；是运行时主耦合点
+- [`src/plugin.js`](src/plugin.js)：主控外观层，负责持有运行时状态、暴露公开方法并把实现委托给 `src/plugin/*.js` 子模块；后续新增主流程优先继续沿用这种 façade + 子模块拆分
+- [`src/plugin/document-actions.js`](src/plugin/document-actions.js)：主控层的 CSL 文档改写动作集合，统一处理执行前校验、Markdown 读取、渲染/恢复/bibliography 改写和 reload/刷新链路
+- [`src/plugin/runtime.js`](src/plugin/runtime.js)：主控层的启动注册与设置规范化逻辑，负责设置默认化、设置页/侧边栏/建议器装配
+- [`src/plugin/library-runtime.js`](src/plugin/library-runtime.js) / [`src/plugin/document-state-runtime.js`](src/plugin/document-state-runtime.js)：主控层的文献库缓存、调度刷新与当前文档状态访问薄封装
 - [`src/bibtex/`](src/bibtex)：BibTeX 数据层，负责设置序列化、路径解析、条目解析与缓存；为建议检索、引用校验和 CSL 渲染提供统一条目来源
 - [`src/csl/`](src/csl)：CSL 工作流层，负责模板注册、BibTeX 到 CSL-JSON 映射、citation 渲染、恢复与 bibliography 更新；与 [`src/document/`](src/document) 一起构成“扫描文档 -> 校验 -> 改写”的主链路
 - [`src/document/`](src/document)：文档扫描与当前文档轻量状态层，负责闭合方括号提取、引用统计与错误缓存；被侧边栏摘要和 CSL 操作共同复用
@@ -52,7 +55,7 @@
 
 ## 当前状态
 
-- 仓库已完成一轮模块化重构，运行时主入口稳定在 [`main.js`](main.js) -> [`src/plugin.js`](src/plugin.js)；后续新增逻辑默认落在 `src/` 对应模块
+- 仓库已完成一轮模块化重构，运行时主入口稳定在 [`main.js`](main.js) -> [`src/plugin.js`](src/plugin.js)；主控层当前已收敛为 façade + 子模块拆分结构，后续新增逻辑默认优先落在 `src/` 对应模块
 - 当前核心能力已经覆盖三条主线：BibTeX 检索与建议、当前文档引用统计、基于外部 `CSL File` 的 citation / bibliography 工作流
 - CSL 工作流已接通“渲染/更新引用、恢复引用、插入/更新参考文献、删除参考文献”这条闭环；受控 citation 块已成为长期持久真源
 - 当前开发重点已从建议器交互逐步转向 CSL 能力扩展与 bibliography 工作流完善，尤其是复杂 citation 语法与真机回归稳定性
@@ -61,13 +64,15 @@
 - 当前平台结论仅限 Windows 真机；Linux 与 macOS 尚未完成系统验证，不应在对外文档中做兼容性承诺
 - 仓库当前已具备受版本控制的 Node 单元测试目录；`tests/` 采用 `unit / support / fixtures` 分层，`tests/output/` 仅保留本地产物
 - 当前 `npm test` 已覆盖 86 条单元测试，核心逻辑层与大部分高宿主耦合层都已有回归保护；已补到 `plugin.onload()`、调度链、`BibEntryStore` 异常分支与设置页关键非法输入
+- `src/plugin.js` 已从重型装配文件收敛为 façade；当前主控层职责按 `document-actions / runtime / library-runtime / document-state-runtime` 拆分，继续重构时优先在这些子模块内演进
 - `package.json` 当前仅保留占位性质的 `npm run build`，插件运行不依赖原生构建步骤
 
 ### 已知实现特征
 
 #### 模块与入口
 
-- [`src/plugin.js`](src/plugin.js) 是插件装配中心；设置页、建议器、侧边栏、BibTeX 数据层和 CSL 操作都在这里汇合
+- [`src/plugin.js`](src/plugin.js) 当前是主控 façade 层；对外暴露生命周期与公开方法，内部实现优先委托给 `src/plugin/*.js` 子模块
+- 主控层当前约定：文档改写动作放进 `src/plugin/document-actions.js`，启动注册放进 `src/plugin/runtime.js`，缓存/调度放进 `src/plugin/library-runtime.js`，当前文档状态访问放进 `src/plugin/document-state-runtime.js`
 - BibTeX 读取与缓存集中在 [`src/bibtex/store.js`](src/bibtex/store.js)；后续涉及检索、校验或引用统计时，优先复用这里的合并条目与 `mergedEntryKeySet`
 - 项目记忆中的路径优先使用仓库根目录下的相对路径；只有在必须消除歧义时才补充绝对路径，并避免再引用旧的 `D:\Desktop\bibtex-citation`
 
@@ -103,6 +108,7 @@
 - HTML 注释 `<!-- ... -->` 中的 `[@key]` 会在闭合块扫描阶段被整体忽略；这条规则同时影响统计、校验、citation 渲染和 bibliography 提取
 - `tests/` 当前已纳入版本控制；新增测试优先落在 `tests/unit/<domain>/`，共享 mock 放到 `tests/support/`，真实样式夹具放到 `tests/fixtures/`
 - `README.md` 负责安装、快速上手与最小排查；只要行为边界变化，就要同时同步 `README.md` 与 `docs/behavior-rules.md`
+- 若后续继续拆主控层，优先保持“子模块通过 plugin 公共方法回调，而不是直接绕过主控字段”的约定，避免破坏现有测试中对可覆写方法的替换能力
 
 ## 计划
 
@@ -115,12 +121,11 @@
 
 ### 建议后续改进
 
-- 继续细化 [`src/plugin.js`](src/plugin.js) 的装配职责，必要时再抽出更清晰的启动/注册层
 - 为 BibTeX 解析与检索排序提取更细的纯函数，降低对 Typora 运行时的耦合，便于测试
 - 继续补齐 BibTeX 到 CSL-JSON 的字段映射，优先关注 `booktitle`、更完整日期、`editor` 与 `volume/issue/page` 这类会影响排序和样式兼容性的字段
 - 若后续继续扩展 citation 工作流，优先围绕受控 citation 块继续完善批量更新、提取与恢复能力，而不是依赖对最终渲染文本做逆向猜测
-- 若后续继续补测试，优先围绕 `src/plugin.js` 的启动 / 注册链与更细的宿主 DOM 结构断言继续加深，而不是重复覆盖已稳定的纯逻辑模块
-- 统一 README 中的安装路径、平台差异和实际代码行为
+- 若后续继续补测试，优先围绕 `src/plugin/runtime.js` 的启动 / 注册链与更细的宿主 DOM 结构断言继续加深，而不是重复覆盖已稳定的纯逻辑模块
+- 若后续再调整平台承诺、安装路径或规则文档边界，优先保持 README、AGENTS 与 `docs/behavior-rules.md` 三处同步
 
 ## 资源
 
@@ -128,6 +133,8 @@
 
 - 插件入口：[main.js](main.js)
 - 插件主控：[src/plugin.js](src/plugin.js)
+- 主控动作子模块：[src/plugin/document-actions.js](src/plugin/document-actions.js)
+- 主控启动子模块：[src/plugin/runtime.js](src/plugin/runtime.js)
 - BibTeX 存储：[src/bibtex/store.js](src/bibtex/store.js)
 - 建议交互：[src/suggest/interactions.js](src/suggest/interactions.js)
 - 插件清单：[manifest.json](manifest.json)

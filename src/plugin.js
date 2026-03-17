@@ -1,16 +1,31 @@
 const { Plugin } = window[Symbol.for("typora-plugin-core@v2")];
 
-import { DEFAULT_SETTINGS, DISPLAY_LANGUAGE, PATH_BASE_MODE } from "./constants.js";
+import { DEFAULT_SETTINGS, DISPLAY_LANGUAGE } from "./constants.js";
 import { createI18n } from "./i18n.js";
 import { BibEntryStore } from "./bibtex/store.js";
 import { CurrentDocumentState } from "./document/state.js";
-import { parseBibFileList, serializeBibFileList } from "./bibtex/settings.js";
-import { BibCitationSettingTab } from "./settings/tab.js";
-import { BibCitationSidebarPanel } from "./sidebar/panel.js";
-import { BibCitationSuggest } from "./suggest/suggest.js";
-import { registerSuggestInteractions } from "./suggest/interactions.js";
-import { findFirstInvalidCitationProblem } from "./csl/citation-blocks.js";
-import { summarizeText } from "./utils/html.js";
+import {
+  ensureNoInvalidCitationKeysForCslAction,
+  renderCurrentDocumentCitations as renderCurrentDocumentCitationsAction,
+  restoreCurrentDocumentCitations as restoreCurrentDocumentCitationsAction,
+  upsertCurrentDocumentBibliography as upsertCurrentDocumentBibliographyAction,
+  removeCurrentDocumentBibliography as removeCurrentDocumentBibliographyAction,
+} from "./plugin/document-actions.js";
+import {
+  normalizePluginSettings,
+  registerPluginRuntime,
+} from "./plugin/runtime.js";
+import {
+  getBibEntries as getBibEntriesRuntime,
+  invalidateLibrary as invalidateLibraryRuntime,
+  reloadLibraryNow as reloadLibraryNowRuntime,
+  scheduleSidebarRefresh as scheduleSidebarRefreshRuntime,
+  scheduleCitationStateRefresh as scheduleCitationStateRefreshRuntime,
+} from "./plugin/library-runtime.js";
+import {
+  getCurrentDocumentCitationState as getCurrentDocumentCitationStateRuntime,
+  resetDocumentState as resetDocumentStateRuntime,
+} from "./plugin/document-state-runtime.js";
 
 /**
  * 功能：作为插件主控类，组合设置页、BibTeX 存储与候选建议模块。
@@ -20,6 +35,7 @@ import { summarizeText } from "./utils/html.js";
 export default class BibCitationPlugin extends Plugin {
   constructor() {
     super(...arguments);
+    this.window = window;
     this.i18n = createI18n();
     this.bibStore = new BibEntryStore(this);
     this.documentState = new CurrentDocumentState();
@@ -45,7 +61,7 @@ export default class BibCitationPlugin extends Plugin {
    * 输出：无返回值。
    */
   invalidateLibrary() {
-    this.bibStore.clear();
+    return invalidateLibraryRuntime(this);
   }
 
   /**
@@ -54,7 +70,7 @@ export default class BibCitationPlugin extends Plugin {
    * 输出：无返回值。
    */
   resetDocumentState() {
-    this.documentState.clear();
+    return resetDocumentStateRuntime(this);
   }
 
   /**
@@ -63,9 +79,7 @@ export default class BibCitationPlugin extends Plugin {
    * 输出：包含唯一条数、总次数与错误信息的对象。
    */
   getCurrentDocumentCitationState() {
-    const markdown = window.editor?.getMarkdown?.() || "";
-    const validCitationKeys = this.bibStore.getEntryKeySet();
-    return this.documentState.getCitationState(markdown, validCitationKeys);
+    return getCurrentDocumentCitationStateRuntime(this);
   }
 
   /**
@@ -74,28 +88,7 @@ export default class BibCitationPlugin extends Plugin {
    * 输出：返回本次渲染结果与改写统计。
    */
   async renderCurrentDocumentCitations() {
-    this.ensureNoInvalidCitationKeysForCslAction();
-    const markdown = window.editor?.getMarkdown?.() || "";
-    const entries = this.getBibEntries();
-    const [{ ensureCslTemplate }, { renderCitationMarkdown }] = await Promise.all([
-      import("./csl/assets.js"),
-      import("./csl/render.js"),
-    ]);
-    const templateName = ensureCslTemplate(this);
-    const result = renderCitationMarkdown(markdown, entries, templateName);
-    if (!result.changed) {
-      return result;
-    }
-
-    const reloadContent = window.File?.reloadContent;
-    if (typeof reloadContent !== "function") {
-      throw new Error(this.i18n.t.sidebar.renderReloadUnavailable);
-    }
-
-    reloadContent(result.markdown, false, true, false, true);
-    this.resetDocumentState();
-    this.sidebarPanel?.render?.();
-    return result;
+    return renderCurrentDocumentCitationsAction(this);
   }
 
   /**
@@ -104,22 +97,7 @@ export default class BibCitationPlugin extends Plugin {
    * 输出：返回本次恢复结果与统计。
    */
   async restoreCurrentDocumentCitations() {
-    const markdown = window.editor?.getMarkdown?.() || "";
-    const { restoreCitationMarkdown } = await import("./csl/render.js");
-    const result = restoreCitationMarkdown(markdown);
-    if (!result.changed) {
-      return result;
-    }
-
-    const reloadContent = window.File?.reloadContent;
-    if (typeof reloadContent !== "function") {
-      throw new Error(this.i18n.t.sidebar.renderReloadUnavailable);
-    }
-
-    reloadContent(result.markdown, false, true, false, true);
-    this.resetDocumentState();
-    this.sidebarPanel?.render?.();
-    return result;
+    return restoreCurrentDocumentCitationsAction(this);
   }
 
   /**
@@ -128,33 +106,7 @@ export default class BibCitationPlugin extends Plugin {
    * 输出：返回本次插入结果与引用 key 统计。
    */
   async upsertCurrentDocumentBibliography() {
-    this.ensureNoInvalidCitationKeysForCslAction();
-    const markdown = window.editor?.getMarkdown?.() || "";
-    const entries = this.getBibEntries();
-    const [{ ensureCslTemplate }, { upsertBibliographyMarkdown }] = await Promise.all([
-      import("./csl/assets.js"),
-      import("./csl/bibliography.js"),
-    ]);
-    const templateName = ensureCslTemplate(this);
-    const result = upsertBibliographyMarkdown(
-      markdown,
-      entries,
-      templateName,
-      this.i18n.t.sidebar.bibliographyHeading,
-    );
-    if (!result.changed) {
-      return result;
-    }
-
-    const reloadContent = window.File?.reloadContent;
-    if (typeof reloadContent !== "function") {
-      throw new Error(this.i18n.t.sidebar.renderReloadUnavailable);
-    }
-
-    reloadContent(result.markdown, false, true, false, true);
-    this.resetDocumentState();
-    this.sidebarPanel?.render?.();
-    return result;
+    return upsertCurrentDocumentBibliographyAction(this);
   }
 
   /**
@@ -163,22 +115,7 @@ export default class BibCitationPlugin extends Plugin {
    * 输出：返回本次删除结果。
    */
   async removeCurrentDocumentBibliography() {
-    const markdown = window.editor?.getMarkdown?.() || "";
-    const { removeBibliographyMarkdown } = await import("./csl/bibliography.js");
-    const result = removeBibliographyMarkdown(markdown);
-    if (!result.changed) {
-      return result;
-    }
-
-    const reloadContent = window.File?.reloadContent;
-    if (typeof reloadContent !== "function") {
-      throw new Error(this.i18n.t.sidebar.renderReloadUnavailable);
-    }
-
-    reloadContent(result.markdown, false, true, false, true);
-    this.resetDocumentState();
-    this.sidebarPanel?.render?.();
-    return result;
+    return removeCurrentDocumentBibliographyAction(this);
   }
 
   /**
@@ -187,27 +124,7 @@ export default class BibCitationPlugin extends Plugin {
    * 输出：若发现非法 citation key，则抛出错误；否则无返回值。
    */
   ensureNoInvalidCitationKeysForCslAction() {
-    const markdown = window.editor?.getMarkdown?.() || "";
-    const entries = this.getBibEntries();
-    const entryKeySet = new Set(entries.map((entry) => entry.key));
-    const invalidProblem = findFirstInvalidCitationProblem(
-      markdown,
-      (key) => entryKeySet.has(key),
-    );
-    if (!invalidProblem) {
-      return;
-    }
-
-    if (invalidProblem.type === "unknown-key") {
-      throw new Error(
-        this.i18n.t.sidebar.invalidCitationPrefix + invalidProblem.key,
-      );
-    }
-
-    throw new Error(
-      this.i18n.t.sidebar.invalidCitationBlockPrefix
-        + summarizeText(invalidProblem.blockText),
-    );
+    return ensureNoInvalidCitationKeysForCslAction(this);
   }
 
   /**
@@ -218,9 +135,7 @@ export default class BibCitationPlugin extends Plugin {
    * 输出：无返回值。
    */
   reloadLibraryNow() {
-    this.invalidateLibrary();
-    this.getBibEntries();
-    this.sidebarPanel?.render?.();
+    return reloadLibraryNowRuntime(this);
   }
 
   /**
@@ -229,15 +144,7 @@ export default class BibCitationPlugin extends Plugin {
    * 输出：无返回值。
    */
   scheduleSidebarRefresh() {
-    if (this._sidebarRefreshScheduled) {
-      return;
-    }
-
-    this._sidebarRefreshScheduled = true;
-    window.requestAnimationFrame(() => {
-      this._sidebarRefreshScheduled = false;
-      this.sidebarPanel?.render?.();
-    });
+    return scheduleSidebarRefreshRuntime(this);
   }
 
   /**
@@ -246,16 +153,7 @@ export default class BibCitationPlugin extends Plugin {
    * 输出：无返回值。
    */
   scheduleCitationStateRefresh() {
-    if (this._citationStateRefreshScheduled) {
-      return;
-    }
-
-    this._citationStateRefreshScheduled = true;
-    window.requestAnimationFrame(() => {
-      this._citationStateRefreshScheduled = false;
-      this.resetDocumentState();
-      this.sidebarPanel?.render?.();
-    });
+    return scheduleCitationStateRefreshRuntime(this);
   }
 
   /**
@@ -265,12 +163,7 @@ export default class BibCitationPlugin extends Plugin {
    * 输出：去重后的文献条目数组。
    */
   getBibEntries() {
-    const hadMergedEntries = this.bibStore.hasMergedEntries();
-    const entries = this.bibStore.getEntries();
-    if (!hadMergedEntries && this.bibStore.hasMergedEntries()) {
-      this.scheduleSidebarRefresh();
-    }
-    return entries;
+    return getBibEntriesRuntime(this);
   }
 
   /**
@@ -287,29 +180,8 @@ export default class BibCitationPlugin extends Plugin {
       ),
     );
     this.settings.setDefault(DEFAULT_SETTINGS);
-    this.settings.set(
-      "bibFiles",
-      serializeBibFileList(parseBibFileList(this.settings.get("bibFiles"))),
-    );
-    this.settings.set(
-      "pathBase",
-      this.settings.get("pathBase") || PATH_BASE_MODE.MARKDOWN,
-    );
-    this.settings.set(
-      "displayLanguage",
-      this.settings.get("displayLanguage") || DISPLAY_LANGUAGE.ZH_CN,
-    );
+    normalizePluginSettings(this);
     this.refreshI18n();
-
-    this.registerSettingTab(new BibCitationSettingTab(this));
-    this.sidebarPanel = new BibCitationSidebarPanel(this);
-    this.register(this.app.workspace.sidebar.addPanel(this.sidebarPanel));
-
-    this._suggest = null;
-    registerSuggestInteractions(this);
-
-    const suggest = new BibCitationSuggest(this.app, this);
-    this._suggest = suggest;
-    this.registerMarkdownSugguest(suggest);
+    registerPluginRuntime(this);
   }
 }

@@ -13,15 +13,12 @@
 
 ## 功能概览
 
-- 从一个或多个本地 `.bib` 文件检索文献
-- 支持配置单个本地 `.csl` 文件作为引用样式
-- 支持按 `citation key`、标题、作者、期刊、年份等字段搜索
-- 在 Typora 的方括号引用语法中输入 `@query` 触发候选列表
-- 在左侧活动栏提供 BibTeX 面板按钮，可查看当前配置概览、当前文档引用统计并执行缓存刷新、citation 渲染/恢复与 bibliography 更新
+- 从一个或多个本地 `.bib` 文件检索文献，并在方括号引用里输入 `@query` 触发候选列表
+- 支持按 `citation key`、标题、作者、期刊、年份等字段搜索并插入引用键
+- 支持配置单个本地 `.csl` 文件，用于 citation 渲染与 bibliography 更新
+- 在左侧活动栏提供 BibTeX 面板按钮，可执行缓存刷新、citation 渲染/恢复与 bibliography 操作
 - 支持在插件设置中切换 `English` 与 `简体中文` 两种界面语言
-- 多个 BibTeX 路径支持逐条添加、编辑、删除
-- 相对路径支持多种解析基准模式
-- 当多个 BibTeX 文件存在相同 `citation key` 时，以配置列表中更靠前的文件为准
+- 支持多 BibTeX 文件、相对路径解析基准与重复 key 优先级控制
 
 ## 环境要求
 
@@ -61,7 +58,7 @@ git clone https://github.com/Lazenca-Liqiuqi/typora-plugin-bibtex-citation.git t
 
 ## 测试
 
-当前仓库已内置受版本控制的 Node 单元测试，覆盖 BibTeX 数据层、CSL 渲染主链路、当前文档统计、建议器、设置页、侧边栏与插件薄封装逻辑。
+当前仓库已内置受版本控制的 Node 单元测试。
 
 在插件目录下可直接运行：
 
@@ -69,7 +66,7 @@ git clone https://github.com/Lazenca-Liqiuqi/typora-plugin-bibtex-citation.git t
 npm test
 ```
 
-当前测试入口默认执行 `tests/unit/` 下的正式单元测试；`tests/fixtures/` 中的 CSL 样式文件会作为真实样式夹具参与回归。当前测试总量为 86 条，已覆盖 BibTeX 数据层、CSL 主链路、当前文档状态、建议器、设置页、侧边栏，以及 `plugin.onload()`、调度链和异常分支。
+当前测试入口默认执行 `tests/unit/` 下的正式单元测试；`tests/fixtures/` 中的 CSL 样式文件会作为真实样式夹具参与回归。当前测试总量为 86 条。
 
 当前实现的完整行为规则、边界与约束已整理到 [docs/behavior-rules.md](docs/behavior-rules.md)。
 
@@ -162,7 +159,7 @@ D:/Literature/shared.bib
 
 候选列表插入这一步只会写入引用键，不会自动展开完整参考文献格式，也不会修改原始 `.bib` 文件。
 
-### 4. 使用侧边栏 BibTeX 面板与 CSL 操作
+### 4. 使用侧边栏操作
 
 启用 Typora Community Plugin Framework 的活动栏后，左侧会出现一个新的 BibTeX 图标按钮。点击后可打开插件侧边栏面板，用于查看当前配置与文档状态，并执行以下操作：
 
@@ -174,7 +171,7 @@ D:/Literature/shared.bib
 
 面板同时会显示当前 `Path Base`、`CSL File`、已配置 BibTeX 文件数量、已索引条目数量和当前文档中的引用统计（中文界面显示为“共 x 条 / y 次”）。
 
-当你修改 `Path Base` 或 BibTeX 文件列表后，侧边栏中的 `Indexed Entries` 会先显示“待刷新”。此时如果你手动点击 `Refresh Cache`，或直接在文档里输入 `[@query` 触发建议检索，插件都会重新读取文献库并把已索引条目数恢复为真实值。
+当你修改 `Path Base` 或 BibTeX 文件列表后，侧边栏中的 `Indexed Entries` 会先显示“待刷新”。此时手动点击 `Refresh Cache`，或直接在文档里输入 `[@query` 触发建议检索，都会重新读取文献库并恢复真实条目数。
 
 这几个按钮的最小理解可以这样记：
 
@@ -219,7 +216,5 @@ D:/Literature/shared.bib
 
 - 插件 ID：`bibtex-citation`
 - 插件名称：`BibTeX Citations`
-- 当前已验证平台：Windows
-- Linux 与 macOS：尚未测试
 - 当前仓库包名推荐使用 `typora-plugin-bibtex-citation`
 - 当前插件运行标识与受控注释前缀仍保持为 `bibtex-citation`
