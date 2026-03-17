@@ -5,7 +5,7 @@
 - 项目名称：`typora-plugin-bibtex-citation`
 - 当前目标仓库名为 `typora-plugin-bibtex-citation`；但插件运行标识、受控注释前缀与当前工作区目录仍可能暂时保留 `bibtex-citation`
 - 项目类型：Typora Community Plugin 插件
-- 当前最新已发布版本：`0.3.1`
+- 当前最新已发布版本：`0.3.2`
 - 主要功能：在 Typora 的方括号引用语法中输入 `@query` 时，从配置的多个 BibTeX 文件中检索文献条目并插入引用键
 - 运行依赖：
   - Typora Community Plugin Framework
@@ -29,6 +29,8 @@
 - [`style.css`](style.css)：建议列表、侧边栏和活动栏按钮的样式层；与宿主 Typora 样式存在直接耦合，改动时要留意覆盖关系
 - [`manifest.json`](manifest.json) / [`package.json`](package.json)：插件元数据与依赖入口，分别影响 Typora 识别和本地 Node 运行环境；当前仓库/包名与插件 `id` 不一定相同
 - [`README.md`](README.md)：对外使用说明；能力边界、按钮语义和支持矩阵变更后要同步更新
+- [`tests/unit/`](tests/unit)：正式单元测试入口，当前覆盖 BibTeX 数据层、CSL 主链路、当前文档状态、建议器与部分插件薄封装
+- [`tests/support/`](tests/support) / [`tests/fixtures/`](tests/fixtures)：测试辅助环境与真实 CSL 样式夹具；`tests/output/` 不纳入版本控制
 
 ## 技术栈与技术路线
 
@@ -54,7 +56,7 @@
 - CSL 工作流已接通“渲染/更新引用、恢复引用、插入/更新参考文献、删除参考文献”这条闭环；受控 citation 块已成为长期持久真源
 - 当前开发重点已从建议器交互逐步转向 CSL 能力扩展与 bibliography 工作流完善，尤其是复杂 citation 语法与真机回归稳定性
 - 设置页、侧边栏、显示语言与文档统计的联动已经基本成型，但关键体验仍需要在 Typora 真机中持续回归
-- 仓库当前没有受版本控制的正式自动化测试目录；`tests/` 仅作为本地 smoke / fixture 区使用，不能视为对外承诺的仓库接口
+- 仓库当前已具备受版本控制的 Node 单元测试目录；`tests/` 采用 `unit / support / fixtures` 分层，`tests/output/` 仅保留本地产物
 - `package.json` 当前仅保留占位性质的 `npm run build`，插件运行不依赖原生构建步骤
 
 ### 已知实现特征
@@ -95,7 +97,7 @@
 #### 调试与文档约束
 
 - HTML 注释 `<!-- ... -->` 中的 `[@key]` 会在闭合块扫描阶段被整体忽略；这条规则同时影响统计、校验、citation 渲染和 bibliography 提取
-- 本地 `tests/` 目录仅作为临时 smoke / fixture 区使用，并被 `.gitignore` 整体忽略；不要在 README、`package.json` 或发布说明中把其中脚本当成受支持接口
+- `tests/` 当前已纳入版本控制；新增测试优先落在 `tests/unit/<domain>/`，共享 mock 放到 `tests/support/`，真实样式夹具放到 `tests/fixtures/`
 - `README.md` 已承担对外能力说明；只要后续继续扩 locator、note-style、bibliography 或按钮语义，就要同步更新 README 的支持矩阵与使用说明
 
 ## 计划
@@ -113,10 +115,7 @@
 - 为 BibTeX 解析与检索排序提取更细的纯函数，降低对 Typora 运行时的耦合，便于测试
 - 继续补齐 BibTeX 到 CSL-JSON 的字段映射，优先关注 `booktitle`、更完整日期、`editor` 与 `volume/issue/page` 这类会影响排序和样式兼容性的字段
 - 若后续继续扩展 citation 工作流，优先围绕受控 citation 块继续完善批量更新、提取与恢复能力，而不是依赖对最终渲染文本做逆向猜测
-- 增加至少一层手工验证清单或自动化测试脚本，覆盖：
-  - 多个 `.bib` 文件加载成功
-  - `@query` 候选项检索
-  - 重复 citation key 的优先级行为
+- 继续补齐高宿主耦合层的测试策略，优先评估 `src/settings/tab.js` 与更细粒度的侧边栏 / 建议器 DOM 行为是否值得继续做轻量 mock 测试
 - 统一 README 中的安装路径、平台差异和实际代码行为
 
 ## 资源
@@ -138,6 +137,7 @@
 - 安装依赖：`npm install`
 - 查看当前 Git 状态：`git status --short --branch`
 - 运行项目定义的构建流程：`npm run build`
+- 运行当前正式单元测试：`npm test`
 - 检查主入口语法：`node --check main.js`
 - 检查 `src/` 下所有模块语法：`Get-ChildItem -Recurse .\src -Filter *.js | ForEach-Object { node --check $_.FullName }`
 
@@ -148,9 +148,10 @@
 - 检查候选栏触发与点击兜底相关实现：`rg -n "findQuery|registerSuggestInteractions|getSelectedBibtexSuggestionKey|translateX" src`
 - 检查当前文档引用统计与 `]` 刷新链路：`rg -n "getCitationState|extractClosedBracketBlocks|getEntryKeySet|scheduleCitationStateRefresh|handleCitationStateKeydown" src`
 
-#### CSL 回归
+#### 测试回归
 
-- 若本地另行准备了未纳入版本控制的 `tests/csl-smoke.mjs` smoke 夹具，可运行：`node tests/csl-smoke.mjs`
+- 全量单测：`npm test`
+- 重点检查当前测试覆盖面：`Get-ChildItem -Recurse tests\unit -Filter *.test.mjs`
 
 ### 调试与排查提示
 

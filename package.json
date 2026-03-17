@@ -1,11 +1,12 @@
 {
   "name": "typora-plugin-bibtex-citation",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Typora BibTeX Citation Plugin",
   "author": "Lazenca-Liqiuqi",
   "main": "main.js",
   "scripts": {
-    "build": "echo BibTeX-only plugin does not require a build step"
+    "build": "echo BibTeX-only plugin does not require a build step",
+    "test": "node --test \"tests/unit/**/*.test.mjs\""
   },
   "dependencies": {
     "@citation-js/core": "^0.7.21",

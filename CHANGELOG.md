@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.3.2 - 2026-03-17
+
+- 正式将 `tests/` 纳入版本控制，按 `unit / support / fixtures` 分层整理测试目录，并移除原有 smoke 脚本入口，统一收敛到 `npm test`
+- 为 CSL 主链路补齐首批正式单元测试：覆盖样式模板注册、严格 citation block 解析、受控 citation 真源、citation 渲染/恢复与 bibliography 更新
+- 将单元测试扩展到 BibTeX 数据层、建议器、当前文档状态、插件薄封装与侧边栏动作分支，当前仓库已具备 72 条可回归的 Node 单元测试
+
 ## 0.3.1 - 2026-03-12
 
 - 将仓库与包名调整为 `typora-plugin-bibtex-citation`，同时保留 Typora 插件 `id` 与受控 citation 注释前缀 `bibtex-citation`，避免破坏现有文档兼容性

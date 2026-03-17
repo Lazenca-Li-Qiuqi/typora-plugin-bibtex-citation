@@ -2,39 +2,36 @@
 
 ## 日期
 
-- 2026-03-12
+- 2026-03-17
 
 ## 已完成
 
-- `Render / Update Citations` 已支持直接重渲染已有受控 citation 块；切换 `CSL File` 后无需先恢复
-- 为 citation 渲染增加了受控 citation 块，渲染后会保留原始 `[@key]` 在注释中
-- 新增 `Restore Citations / 恢复`，可以把受控 citation 块还原成原始 `[@key]` / `[@a; @b]`
-- 抽出了统一引用源提取逻辑，当前会同时识别正文里的严格 `[@key]` 和受控 citation 块中的原始 `[@key]`
-- `Insert / Update Bibliography` 已适配受控 citation 块；渲染后不恢复也能继续生成或更新参考文献
-- 当前文档引用统计已适配受控 citation 块；渲染前、渲染后、恢复后的统计保持一致
-- 侧边栏按钮布局已调整为两组七三开：`渲染引用/恢复` 与 `插入/更新参考文献/删除`
+- 将 `tests/` 正式纳入版本控制，整理为 `tests/unit/`、`tests/support/`、`tests/fixtures/` 三层结构，并保留 `tests/output/` 作为本地产物目录
+- 删除原有 smoke 脚本入口，把真实 CSL 样式回归迁入正式单元测试，当前统一通过 `npm test` 执行
+- 为 BibTeX 数据层补齐单元测试：覆盖设置序列化、路径解析、BibTeX 解析与 `BibEntryStore` 的合并 / 缓存行为
+- 为 CSL 主链路补齐单元测试：覆盖样式模板注册、严格 citation block 解析、受控 citation 真源、citation 渲染 / 恢复与 bibliography 更新
+- 为当前文档状态、建议器、插件薄封装、侧边栏动作分支与共享工具补齐单元测试
+- 当前仓库已具备 72 条 Node 单元测试，`npm test` 全绿
 
 ## 主要方法与工具
 
-- `Get-Content src\\csl\\render.js`
-- `Get-Content src\\csl\\citation-blocks.js`
-- `Get-Content src\\csl\\bibliography.js`
-- `Get-Content src\\document\\state.js`
-- `Get-Content src\\sidebar\\panel.js`
-- `Get-Content src\\i18n.js`
+- `Get-Content AGENTS.md`
 - `Get-Content README.md`
-- `Get-ChildItem -Recurse .\\src -Filter *.js | ForEach-Object { node --check $_.FullName }`
-- `node --input-type=module -` 最小样例：验证渲染后 bibliography 可用、统计前后保持一致、恢复后内容可逆
-- `node --input-type=module -` 最小样例：验证受控 citation 块在切换不同 CSL 样式后可直接重渲染，并且仍可恢复
+- `Get-Content src\\bibtex\\*.js`
+- `Get-Content src\\csl\\*.js`
+- `Get-Content src\\document\\state.js`
+- `Get-Content src\\suggest\\*.js`
+- `Get-Content src\\sidebar\\panel.js`
+- `npm test`
 - `apply_patch`
 
 ## 当前任务
 
-- bibliography、统计、渲染更新与恢复链路已经接通受控 citation 块
-- 下一步更值得继续的是：在 Typora 真机中回归“切换 CSL 后直接更新”体验，或者继续扩更复杂的 CSL 引用语法
+- 版本 `0.3.2` 的主要工作已经聚焦到测试体系建设，当前核心数据层与 CSL 主链路已有较完整的单元测试保护
+- 下一步更值得继续的是：继续评估高宿主耦合层是否还需要更细的轻量 DOM 测试，或回到功能侧继续扩 locator / prefix / suffix / note-style
 
 ## 下次继续
 
-- 在 Typora 真机中回归：切换 CSL 后直接更新 citation、渲染后直接插 bibliography、恢复后再插 bibliography、统计数字前后一致
-- 如果继续完善 citation 工作流，优先考虑是否需要补一个更明确的“仅更新已渲染 citation”入口，或继续扩 locator、prefix/suffix 与 note-style
-- 若继续扩展 CSL 能力，优先评估 locator、prefix/suffix 与 note-style 的支持边界
+- 若继续补测试，优先评估 `src/settings/tab.js` 与更细的 `src/suggest/interactions.js` / `src/sidebar/panel.js` DOM 细节是否值得继续增加 mock 覆盖
+- 若继续做功能开发，优先评估 locator、prefix/suffix 与 note-style 的支持边界，并同步补对应单元测试
+- 若需要发布后核验，可在 Typora 真机里快速抽查：`[@query]` 建议、citation 渲染 / 恢复、bibliography 更新以及当前文档统计是否仍与单测结论一致

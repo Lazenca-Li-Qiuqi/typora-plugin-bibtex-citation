@@ -12,4 +12,13 @@ out/
 mise.toml
 
 # Local tests
-tests/
+tests/*
+!tests/README.md
+!tests/**/*.mjs
+!tests/fixtures/
+!tests/fixtures/**
+!tests/support/
+!tests/support/**
+!tests/unit/
+!tests/unit/**
+tests/output/
