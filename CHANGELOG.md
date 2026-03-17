@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.4.0 - 2026-03-17
+
+- 将 `src/plugin.js` 收敛为主控 façade 层，并把 CSL 文档改写、启动注册、文献库缓存/调度、当前文档状态访问拆分到 `src/plugin/*.js` 子模块，降低主控耦合并保留现有测试可替换性
+- 同步 `AGENTS.md`、`LAST_RUN.md` 与 `README.md`，对齐主控层拆分后的项目记忆、对外说明与长期维护约束
+- 继续精简 `README.md` 的测试入口与侧边栏操作说明，提升 GitHub 场景下的可扫描性
+
 ## 0.3.5 - 2026-03-17
 
 - 新增 `docs/behavior-rules.md`，集中整理当前 BibTeX、建议器、文档扫描、CSL、bibliography、侧边栏与设置页的行为规则与边界

@@ -6,7 +6,7 @@
 
 本项目 fork 自 `adam-coates/typora-plugin-zotero`，并在此基础上逐步调整为面向本地 BibTeX 文件的引用工作流。
 
-![Version](https://img.shields.io/badge/version-v0.3.5-2f6feb)
+![Version](https://img.shields.io/badge/version-v0.4.0-2f6feb)
 ![Platform](https://img.shields.io/badge/platform-Windows-1f883d)
 ![Node](https://img.shields.io/badge/node-%3E%3D22-8a2be2)
 ![Typora Plugin](https://img.shields.io/badge/Typora-Community%20Plugin-0a7ea4)
@@ -58,7 +58,7 @@ git clone https://github.com/Lazenca-Liqiuqi/typora-plugin-bibtex-citation.git t
 
 ## 测试
 
-当前仓库已内置受版本控制的 Node 单元测试。
+当前仓库已内置受版本控制的 Node 单元测试，常规回归入口如下：
 
 在插件目录下可直接运行：
 
@@ -171,9 +171,9 @@ D:/Literature/shared.bib
 
 面板同时会显示当前 `Path Base`、`CSL File`、已配置 BibTeX 文件数量、已索引条目数量和当前文档中的引用统计（中文界面显示为“共 x 条 / y 次”）。
 
-当你修改 `Path Base` 或 BibTeX 文件列表后，侧边栏中的 `Indexed Entries` 会先显示“待刷新”。此时手动点击 `Refresh Cache`，或直接在文档里输入 `[@query` 触发建议检索，都会重新读取文献库并恢复真实条目数。
+如果你修改了 `Path Base` 或 BibTeX 文件列表，侧边栏中的 `Indexed Entries` 会先显示“待刷新”。此时手动点击 `Refresh Cache`，或直接在文档里输入 `[@query` 触发建议检索，都会重新读取文献库并恢复真实条目数。
 
-这几个按钮的最小理解可以这样记：
+四个核心按钮可以这样理解：
 
 - `Render / Update Citations`：把严格合法的 `[@key]` / `[@a; @b]` 或已有受控 citation 块渲染为当前 CSL 样式的文中引用
 - `Restore Citations`：把受控 citation 块恢复成原始 `[@key]`
