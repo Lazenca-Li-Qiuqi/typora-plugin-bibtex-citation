@@ -26,7 +26,7 @@
 - [`src/csl/`](src/csl)：CSL 工作流层，负责模板注册、BibTeX 到 CSL-JSON 映射、citation 渲染、恢复与 bibliography 更新；与 [`src/document/`](src/document) 一起构成“扫描文档 -> 校验 -> 改写”的主链路
 - [`src/document/`](src/document)：文档扫描与当前文档轻量状态层，负责闭合方括号提取、引用统计与错误缓存；被侧边栏摘要和 CSL 操作共同复用
 - [`src/suggest/`](src/suggest)：建议交互层，负责 `[@query]` 触发、候选排序、HTML 渲染和键鼠兜底；直接依赖 BibTeX 数据层，不参与 CSL 改写
-- [`src/settings/`](src/settings)：设置 UI 层，负责维护 BibTeX/CSL 路径、路径基准和显示语言；设置变更后通过 [`src/plugin.js`](src/plugin.js) 驱动缓存失效和轻量重绘
+- [`src/settings/`](src/settings)：设置 UI 层，负责维护 BibTeX/CSL 路径、逐条来源类别和显示语言；设置变更后通过 [`src/plugin.js`](src/plugin.js) 驱动缓存失效和轻量重绘
 - [`src/constants.js`](src/constants.js) / [`src/i18n.js`](src/i18n.js)：共享常量与文案层，被设置页、侧边栏和主控装配共同依赖
 - [`src/utils/`](src/utils)：通用小工具，当前主要提供 HTML、文本压缩与错误摘要辅助，尽量保持无宿主耦合
 - [`style.css`](style.css)：建议列表、侧边栏和活动栏按钮的样式层；与宿主 Typora 样式存在直接耦合，改动时要留意覆盖关系
@@ -48,8 +48,8 @@
 ### 技术路线
 
 - 通过 `EditorSuggest` 监听未闭合方括号引用中的 `@query` 模式
-- 通过设置项维护多个 BibTeX 文件路径，支持逗号、分号和换行分隔
-- 相对路径优先相对当前正在编辑的 Markdown 文件目录解析，无法确定当前文件时再回退到 Typora 进程当前目录
+- 通过设置项维护多个 BibTeX 文件配置，每条记录都显式声明 `path + sourceType`
+- 路径解析按单条配置的 `sourceType` 严格执行；不再回退到 `process.cwd()` 或其他来源类别
 - 读取并解析配置中的 `.bib` 文件，提取 `key`、`title`、`author`、`year`、`journal` 等字段用于搜索和展示
 - 插入行为只写入 `@citationKey`，也不修改任何 `.bib` 文件
 
@@ -63,7 +63,7 @@
 - 当前 README 已收敛到安装、配置、快速使用与最小排查；更细的行为规则统一沉淀在 `docs/behavior-rules.md`
 - 当前平台结论仅限 Windows 真机；Linux 与 macOS 尚未完成系统验证，不应在对外文档中做兼容性承诺
 - 仓库当前已具备受版本控制的 Node 单元测试目录；`tests/` 采用 `unit / support / fixtures` 分层，`tests/output/` 仅保留本地产物
-- 当前 `npm test` 已覆盖 86 条单元测试，核心逻辑层与大部分高宿主耦合层都已有回归保护；已补到 `plugin.onload()`、调度链、`BibEntryStore` 异常分支与设置页关键非法输入
+- 当前 `npm test` 已覆盖 87 条单元测试，核心逻辑层与大部分高宿主耦合层都已有回归保护；已补到 `plugin.onload()`、调度链、`BibEntryStore` 异常分支与设置页关键非法输入
 - `src/plugin.js` 已从重型装配文件收敛为 façade；当前主控层职责按 `document-actions / runtime / library-runtime / document-state-runtime` 拆分，继续重构时优先在这些子模块内演进
 - `package.json` 当前仅保留占位性质的 `npm run build`，插件运行不依赖原生构建步骤
 
@@ -79,7 +79,8 @@
 #### BibTeX 与建议器
 
 - 只检索设置中列出的 BibTeX 文件，不依赖外部文献管理器或 SQLite；重复 citation key 以更靠前的文件为准
-- BibTeX 路径在设置页中逐条维护，底层仍序列化为换行分隔字符串；相对路径解析规则由 `Path Base` 决定
+- BibTeX 路径在设置页中逐条维护，底层序列化为对象数组；每一条都必须显式声明 `path + sourceType`
+- BibTeX 与 CSL 路径解析都已改为逐条 `path + sourceType` 模型；实现时不要再引入基于 `process.cwd()`、Typora 目录或其他来源类别的隐式回退
 - 建议器只在未闭合的方括号引用中触发，例如 `[@key` 或 `[@a; @b`；正文里的裸 `@key` 不再触发
 - 候选项必须返回 HTML 字符串而不是 DOM 节点；建议交互兜底逻辑集中在 [`src/suggest/interactions.js`](src/suggest/interactions.js)
 

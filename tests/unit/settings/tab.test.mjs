@@ -94,14 +94,17 @@ globalThis.window[coreSymbol] = {
   },
 };
 
-const { DISPLAY_LANGUAGE, PATH_BASE_MODE } = await import(createFreshModuleUrl("src/constants.js"));
-const { BibCitationSettingTab } = await import(createFreshModuleUrl("src/settings/tab.js"));
+const { DISPLAY_LANGUAGE, FILE_SOURCE_TYPE } = await import(
+  createFreshModuleUrl("src/constants.js")
+);
+const { BibCitationSettingTab } = await import(
+  createFreshModuleUrl("src/settings/tab.js")
+);
 
 function createPlugin(overrides = {}) {
   const store = new Map([
     ["displayLanguage", DISPLAY_LANGUAGE.ZH_CN],
-    ["pathBase", PATH_BASE_MODE.MARKDOWN],
-    ["bibFiles", ""],
+    ["bibFiles", "[]"],
     ["cslFile", ""],
   ]);
   return {
@@ -110,14 +113,13 @@ function createPlugin(overrides = {}) {
         pluginName: "BibTeX Citations",
         settingsSaved: "saved",
         emptyPathWarning: "empty path",
-        absolutePathRequired: "absolute only",
+        invalidFileConfig: "invalid config: ",
         settings: {
           language: { name: "Language", desc: "desc", en: "English", zhCn: "简体中文" },
-          pathBase: {
-            name: "Path Base",
-            desc: "desc",
-            markdown: "Markdown",
-            typora: "Typora",
+          fileSourceType: {
+            name: "Source Type",
+            markdownRelative: "Markdown",
+            typoraRelative: "Typora",
             absolute: "Absolute",
           },
           bibFiles: {
@@ -163,6 +165,21 @@ function createPlugin(overrides = {}) {
   };
 }
 
+function findSectionByTitle(container, title) {
+  return container.children.find(
+    (child) =>
+      child.className === "bibtex-setting-section" &&
+      child.children[0]?.children[0]?.textContent === title,
+  );
+}
+
+function openSection(container, title) {
+  const section = findSectionByTitle(container, title);
+  section.open = true;
+  section.dispatch("toggle");
+  return section.children[2];
+}
+
 test("BibCitationSettingTab.name 返回插件名称，render 在无 BibTeX 文件时显示 empty state", () => {
   notices.length = 0;
   selectBindings.length = 0;
@@ -173,10 +190,10 @@ test("BibCitationSettingTab.name 返回插件名称，render 在无 BibTeX 文�
   tab.render();
 
   assert.match(collectTextContent(tab.containerEl), /No files/);
-  assert.equal(selectBindings.length >= 2, true);
+  assert.equal(selectBindings.length >= 1, true);
 });
 
-test("BibCitationSettingTab 的语言与路径基准切换会更新设置并刷新视图", () => {
+test("BibCitationSettingTab 的语言切换会更新设置并刷新视图", () => {
   notices.length = 0;
   selectBindings.length = 0;
   const plugin = createPlugin();
@@ -184,13 +201,10 @@ test("BibCitationSettingTab 的语言与路径基准切换会更新设置并刷�
   tab.render();
 
   selectBindings[0].trigger("change", DISPLAY_LANGUAGE.EN);
-  selectBindings[1].trigger("change", PATH_BASE_MODE.ABSOLUTE);
 
   assert.equal(plugin.settings.get("displayLanguage"), DISPLAY_LANGUAGE.EN);
-  assert.equal(plugin.settings.get("pathBase"), PATH_BASE_MODE.ABSOLUTE);
   assert.equal(plugin.refreshI18nCalls, 1);
-  assert.equal(plugin.invalidateLibraryCalls, 1);
-  assert.equal(plugin.sidebarPanel.renderCalls.length >= 2, true);
+  assert.equal(plugin.sidebarPanel.renderCalls.length >= 1, true);
   assert.equal(notices.includes("saved"), true);
 });
 
@@ -200,9 +214,20 @@ test("BibCitationSettingTab 的添加、删除与清空 CSL 按钮会更新设�
     settings: {
       store: new Map([
         ["displayLanguage", DISPLAY_LANGUAGE.ZH_CN],
-        ["pathBase", PATH_BASE_MODE.MARKDOWN],
-        ["bibFiles", "a.bib\nb.bib"],
-        ["cslFile", "./styles/apa.csl"],
+        [
+          "bibFiles",
+          JSON.stringify([
+            { path: "a.bib", sourceType: FILE_SOURCE_TYPE.MARKDOWN_RELATIVE },
+            { path: "b.bib", sourceType: FILE_SOURCE_TYPE.ABSOLUTE },
+          ]),
+        ],
+        [
+          "cslFile",
+          JSON.stringify({
+            path: "./styles/apa.csl",
+            sourceType: FILE_SOURCE_TYPE.MARKDOWN_RELATIVE,
+          }),
+        ],
       ]),
       get(key) {
         return this.store.get(key);
@@ -215,31 +240,57 @@ test("BibCitationSettingTab 的添加、删除与清空 CSL 按钮会更新设�
   const tab = new BibCitationSettingTab(plugin);
   tab.render();
 
-  const rows = tab.containerEl.children.filter((child) => child.className === "bibtex-setting-list")[0];
+  const rows = openSection(tab.containerEl, "Bib Files");
   const firstRow = rows.children[0];
-  const secondRow = rows.children[1];
-  firstRow.children[1].dispatch("click");
-  assert.equal(plugin.settings.get("bibFiles"), "b.bib");
+  firstRow.children[2].dispatch("click");
+  assert.equal(
+    plugin.settings.get("bibFiles"),
+    JSON.stringify([{ path: "b.bib", sourceType: FILE_SOURCE_TYPE.ABSOLUTE }]),
+  );
 
-  const addRow = tab.containerEl.children.find((child) => child.className === "bibtex-setting-add-row");
+  const addRow = rows.children.find(
+    (child) => child.className === "bibtex-setting-add-row",
+  );
   addRow.children[0].value = "c.bib";
-  addRow.children[1].dispatch("click");
-  assert.equal(plugin.settings.get("bibFiles"), "b.bib\nc.bib");
+  addRow.children[1].value = FILE_SOURCE_TYPE.TYPORA_RELATIVE;
+  addRow.children[2].dispatch("click");
+  assert.equal(
+    plugin.settings.get("bibFiles"),
+    JSON.stringify([
+      { path: "b.bib", sourceType: FILE_SOURCE_TYPE.ABSOLUTE },
+      { path: "c.bib", sourceType: FILE_SOURCE_TYPE.TYPORA_RELATIVE },
+    ]),
+  );
 
-  const cslRow = tab.containerEl.children.find((child) => child.className === "bibtex-setting-row" && child.children[1]?.textContent === "Clear");
-  cslRow.children[1].dispatch("click");
+  const cslHost = openSection(tab.containerEl, "CSL File");
+  const cslRow = cslHost.children.find(
+    (child) =>
+      child.className === "bibtex-setting-row" &&
+      child.children[2]?.textContent === "Clear",
+  );
+  cslRow.children[2].dispatch("click");
   assert.equal(plugin.settings.get("cslFile"), "");
 });
 
-test("BibCitationSettingTab 会阻止空路径与 absolute 模式下的相对路径", () => {
+test("BibCitationSettingTab 会阻止空路径与 absolute 来源下的相对路径", () => {
   notices.length = 0;
   const plugin = createPlugin({
     settings: {
       store: new Map([
         ["displayLanguage", DISPLAY_LANGUAGE.ZH_CN],
-        ["pathBase", PATH_BASE_MODE.ABSOLUTE],
-        ["bibFiles", "a.bib"],
-        ["cslFile", "C:/styles/apa.csl"],
+        [
+          "bibFiles",
+          JSON.stringify([
+            { path: "a.bib", sourceType: FILE_SOURCE_TYPE.TYPORA_RELATIVE },
+          ]),
+        ],
+        [
+          "cslFile",
+          JSON.stringify({
+            path: "C:/styles/apa.csl",
+            sourceType: FILE_SOURCE_TYPE.ABSOLUTE,
+          }),
+        ],
       ]),
       get(key) {
         return this.store.get(key);
@@ -252,17 +303,24 @@ test("BibCitationSettingTab 会阻止空路径与 absolute 模式下的相对路
   const tab = new BibCitationSettingTab(plugin);
   tab.render();
 
-  const addRow = tab.containerEl.children.find((child) => child.className === "bibtex-setting-add-row");
+  const rows = openSection(tab.containerEl, "Bib Files");
+  const addRow = rows.children.find((child) => child.className === "bibtex-setting-add-row");
   addRow.children[0].value = "";
-  addRow.children[1].dispatch("click");
+  addRow.children[2].dispatch("click");
   addRow.children[0].value = "./relative.bib";
-  addRow.children[1].dispatch("click");
+  addRow.children[1].value = FILE_SOURCE_TYPE.ABSOLUTE;
+  addRow.children[2].dispatch("click");
 
-  const editRow = tab.containerEl.children.find((child) => child.className === "bibtex-setting-list").children[0];
+  const editRow = rows.children[0];
   editRow.children[0].value = "./edited-relative.bib";
+  editRow.children[1].value = FILE_SOURCE_TYPE.ABSOLUTE;
   editRow.children[0].dispatch("change");
 
   assert.equal(notices.includes("empty path"), true);
-  assert.equal(notices.includes("absolute only"), true);
-  assert.equal(plugin.settings.get("bibFiles"), "a.bib");
+  assert.equal(notices.includes("invalid config: ./relative.bib"), true);
+  assert.equal(notices.includes("invalid config: ./edited-relative.bib"), true);
+  assert.equal(
+    plugin.settings.get("bibFiles"),
+    JSON.stringify([{ path: "a.bib", sourceType: FILE_SOURCE_TYPE.TYPORA_RELATIVE }]),
+  );
 });

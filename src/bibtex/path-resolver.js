@@ -1,4 +1,5 @@
-import { PATH_BASE_MODE } from "../constants.js";
+import { FILE_SOURCE_TYPE } from "../constants.js";
+import { normalizeFileConfig } from "./settings.js";
 
 const path = window.reqnode("path");
 
@@ -36,62 +37,74 @@ export function getTyporaBasePath(plugin) {
   if (vaultPath) {
     return vaultPath;
   }
-
-  return process.cwd();
+  return "";
 }
 
 /**
- * 功能：判断当前路径模式下是否应拒绝相对文件路径。
- * 输入：插件实例、用户填写的路径。
- * 输出：布尔值，true 表示当前模式只允许绝对路径。
+ * 功能：判断单条文件配置是否与其来源类别相匹配。
+ * 输入：文件配置对象。
+ * 输出：布尔值，`true` 表示该配置在语义上有效。
  */
-export function shouldRejectRelativePath(plugin, filePath) {
-  return (
-    plugin.settings.get("pathBase") === PATH_BASE_MODE.ABSOLUTE &&
-    !path.isAbsolute(String(filePath || "").trim())
-  );
+export function isFileConfigShapeValid(fileConfig) {
+  const normalized = normalizeFileConfig(fileConfig);
+  if (!normalized) {
+    return false;
+  }
+
+  if (normalized.sourceType === FILE_SOURCE_TYPE.ABSOLUTE) {
+    return path.isAbsolute(normalized.path);
+  }
+
+  return true;
 }
 
 /**
- * 功能：按照当前设置把单个文件路径解析为可读取的绝对路径。
- * 输入：原始路径字符串、插件实例。
- * 输出：解析后的绝对路径；若在当前模式下不允许则返回空字符串。
+ * 功能：按照文件自身声明的来源类别，把单条文件配置解析为绝对路径。
+ * 输入：文件配置对象、插件实例。
+ * 输出：解析后的绝对路径；若配置无效或当前上下文不可用则返回空字符串。
  */
-export function resolvePathByBase(rawPath, plugin) {
-  const trimmedPath = String(rawPath || "").trim();
-  if (!trimmedPath) return "";
-  if (path.isAbsolute(trimmedPath)) return trimmedPath;
-
-  const pathBase = plugin.settings.get("pathBase");
-
-  if (pathBase === PATH_BASE_MODE.ABSOLUTE) {
+export function resolveFileConfigPath(fileConfig, plugin) {
+  const normalized = normalizeFileConfig(fileConfig);
+  if (!normalized || !isFileConfigShapeValid(normalized)) {
     return "";
   }
 
-  if (pathBase === PATH_BASE_MODE.MARKDOWN) {
-    const activeMarkdownPath = getActiveMarkdownPath();
-    if (activeMarkdownPath) {
-      return path.resolve(path.dirname(activeMarkdownPath), trimmedPath);
+  switch (normalized.sourceType) {
+    case FILE_SOURCE_TYPE.ABSOLUTE:
+      return normalized.path;
+    case FILE_SOURCE_TYPE.MARKDOWN_RELATIVE: {
+      const activeMarkdownPath = getActiveMarkdownPath();
+      if (!activeMarkdownPath) {
+        return "";
+      }
+      return path.resolve(path.dirname(activeMarkdownPath), normalized.path);
     }
+    case FILE_SOURCE_TYPE.TYPORA_RELATIVE: {
+      const basePath = getTyporaBasePath(plugin);
+      if (!basePath) {
+        return "";
+      }
+      return path.resolve(basePath, normalized.path);
+    }
+    default:
+      return "";
   }
-
-  return path.resolve(getTyporaBasePath(plugin), trimmedPath);
 }
 
 /**
  * 功能：按照当前设置把 BibTeX 路径解析为可读取的绝对路径。
- * 输入：原始路径字符串、插件实例。
+ * 输入：文件配置对象、插件实例。
  * 输出：解析后的绝对路径；若在当前模式下不允许则返回空字符串。
  */
-export function resolveBibFilePath(rawPath, plugin) {
-  return resolvePathByBase(rawPath, plugin);
+export function resolveBibFilePath(fileConfig, plugin) {
+  return resolveFileConfigPath(fileConfig, plugin);
 }
 
 /**
  * 功能：按照当前设置把 CSL 路径解析为可读取的绝对路径。
- * 输入：原始路径字符串、插件实例。
+ * 输入：文件配置对象、插件实例。
  * 输出：解析后的绝对路径；若在当前模式下不允许则返回空字符串。
  */
-export function resolveCslFilePath(rawPath, plugin) {
-  return resolvePathByBase(rawPath, plugin);
+export function resolveCslFilePath(fileConfig, plugin) {
+  return resolveFileConfigPath(fileConfig, plugin);
 }

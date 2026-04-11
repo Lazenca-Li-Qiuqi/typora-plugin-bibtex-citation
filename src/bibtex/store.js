@@ -1,5 +1,5 @@
 import { parseBibEntries } from "./parser.js";
-import { resolveBibFilePath } from "./path-resolver.js";
+import { isFileConfigShapeValid, resolveBibFilePath } from "./path-resolver.js";
 import { parseBibFileList } from "./settings.js";
 
 const fs = window.reqnode("fs");
@@ -73,7 +73,10 @@ export class BibEntryStore {
       const resolvedPath = resolveBibFilePath(bibFile, this.plugin);
 
       if (!resolvedPath) {
-        console.warn(this.plugin.i18n.t.absolutePathRequired);
+        const warning = isFileConfigShapeValid(bibFile)
+          ? this.plugin.i18n.t.unresolvableFilePath
+          : this.plugin.i18n.t.invalidFileConfig;
+        console.warn(`${warning}${bibFile?.path || ""}`);
         continue;
       }
 

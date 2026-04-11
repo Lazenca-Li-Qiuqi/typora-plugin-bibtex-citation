@@ -158,10 +158,10 @@ export function createMockPluginForStyle(styleFile = "apa.csl") {
     settings: {
       get(key) {
         if (key === "cslFile") {
-          return cslFilePath;
-        }
-        if (key === "pathBase") {
-          return "absolute";
+          return JSON.stringify({
+            path: cslFilePath,
+            sourceType: "absolute",
+          });
         }
         return "";
       },

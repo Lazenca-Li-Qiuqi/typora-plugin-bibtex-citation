@@ -1,5 +1,10 @@
-import { DISPLAY_LANGUAGE, PATH_BASE_MODE } from "../constants.js";
-import { parseBibFileList, serializeBibFileList } from "../bibtex/settings.js";
+import { DISPLAY_LANGUAGE } from "../constants.js";
+import {
+  parseBibFileList,
+  parseSingleFileConfig,
+  serializeBibFileList,
+  serializeSingleFileConfig,
+} from "../bibtex/settings.js";
 import { BibCitationSettingTab } from "../settings/tab.js";
 import { BibCitationSidebarPanel } from "../sidebar/panel.js";
 import { BibCitationSuggest } from "../suggest/suggest.js";
@@ -16,8 +21,8 @@ export function normalizePluginSettings(plugin) {
     serializeBibFileList(parseBibFileList(plugin.settings.get("bibFiles"))),
   );
   plugin.settings.set(
-    "pathBase",
-    plugin.settings.get("pathBase") || PATH_BASE_MODE.MARKDOWN,
+    "cslFile",
+    serializeSingleFileConfig(parseSingleFileConfig(plugin.settings.get("cslFile"))),
   );
   plugin.settings.set(
     "displayLanguage",

@@ -1,7 +1,7 @@
 const { Notice, SidebarPanel } = window[Symbol.for("typora-plugin-core@v2")];
 
-import { PATH_BASE_MODE } from "../constants.js";
-import { parseBibFileList } from "../bibtex/settings.js";
+import { FILE_SOURCE_TYPE } from "../constants.js";
+import { parseBibFileList, parseSingleFileConfig } from "../bibtex/settings.js";
 import { summarizeText } from "../utils/html.js";
 
 /**
@@ -42,8 +42,7 @@ export class BibCitationSidebarPanel extends SidebarPanel {
     const { allowLibraryLoad = true } = options;
     const t = this.plugin.i18n.t.sidebar;
     const paths = parseBibFileList(this.plugin.settings.get("bibFiles"));
-    const cslFile = this.plugin.settings.get("cslFile") || "";
-    const pathBase = this.plugin.settings.get("pathBase");
+    const cslFile = parseSingleFileConfig(this.plugin.settings.get("cslFile"));
 
     let entryCount = 0;
     let loadError = "";
@@ -62,8 +61,7 @@ export class BibCitationSidebarPanel extends SidebarPanel {
 
     const sections = [
       createSummaryGrid([
-        [t.pathBaseLabel, getPathBaseLabel(pathBase, this.plugin.i18n.t.settings.pathBase)],
-        [t.cslFileLabel, cslFile || t.unavailable],
+        [t.cslFileLabel, formatFileConfigLabel(cslFile, this.plugin.i18n.t.settings.fileSourceType, t.unavailable)],
         [t.configuredFilesLabel, String(paths.length)],
         [t.indexedEntriesLabel, loadError || entryCount === null ? t.unavailable : String(entryCount)],
         [
@@ -98,7 +96,9 @@ export class BibCitationSidebarPanel extends SidebarPanel {
       ]),
       loadError ? createError(t.loadErrorPrefix + loadError) : null,
       citationState.error ? createError(formatCitationStateError(t, citationState.error)) : null,
-      paths.length ? createPathList(paths, t.filesTitle) : createEmpty(t.empty),
+      paths.length
+        ? createPathList(paths, t.filesTitle, this.plugin.i18n.t.settings.fileSourceType)
+        : createEmpty(t.empty),
     ].filter(Boolean);
 
     this.containerEl.innerHTML = "";
@@ -271,7 +271,7 @@ function createEmpty(text) {
   return el;
 }
 
-function createPathList(paths, titleText) {
+function createPathList(paths, titleText, sourceTypeLabels) {
   const wrapper = document.createElement("div");
   wrapper.className = "bibtex-sidebar-section";
 
@@ -282,11 +282,12 @@ function createPathList(paths, titleText) {
   const list = document.createElement("ol");
   list.className = "bibtex-sidebar-path-list";
 
-  for (const path of paths) {
+  for (const pathConfig of paths) {
     const item = document.createElement("li");
     item.className = "bibtex-sidebar-path-item";
-    item.textContent = path;
-    item.title = path;
+    const text = formatFileConfigLabel(pathConfig, sourceTypeLabels, "");
+    item.textContent = text;
+    item.title = text;
     list.append(item);
   }
 
@@ -294,15 +295,23 @@ function createPathList(paths, titleText) {
   return wrapper;
 }
 
-function getPathBaseLabel(pathBase, labels) {
-  switch (pathBase) {
-    case PATH_BASE_MODE.TYPORA:
-      return labels.typora;
-    case PATH_BASE_MODE.ABSOLUTE:
+function formatFileConfigLabel(fileConfig, labels, fallback) {
+  if (!fileConfig?.path || !fileConfig?.sourceType) {
+    return fallback;
+  }
+
+  return `${fileConfig.path} (${getSourceTypeLabel(fileConfig.sourceType, labels)})`;
+}
+
+function getSourceTypeLabel(sourceType, labels) {
+  switch (sourceType) {
+    case FILE_SOURCE_TYPE.TYPORA_RELATIVE:
+      return labels.typoraRelative;
+    case FILE_SOURCE_TYPE.ABSOLUTE:
       return labels.absolute;
-    case PATH_BASE_MODE.MARKDOWN:
+    case FILE_SOURCE_TYPE.MARKDOWN_RELATIVE:
     default:
-      return labels.markdown;
+      return labels.markdownRelative;
   }
 }
 

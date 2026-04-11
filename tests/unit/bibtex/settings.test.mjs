@@ -12,16 +12,33 @@ const { parseBibFileList, serializeBibFileList } = await import(
   createFreshModuleUrl("src/bibtex/settings.js")
 );
 
-test("parseBibFileList 支持逗号、分号与换行混合分隔", () => {
+test("parseBibFileList 解析 JSON 文件配置列表并过滤无效项", () => {
   assert.deepEqual(
-    parseBibFileList("a.bib, b.bib;\n c.bib\r\nd.bib"),
-    ["a.bib", "b.bib", "c.bib", "d.bib"],
+    parseBibFileList(
+      JSON.stringify([
+        { path: "./a.bib", sourceType: "markdown-relative" },
+        { path: " ", sourceType: "absolute" },
+        { path: "C:/b.bib", sourceType: "absolute" },
+      ]),
+    ),
+    [
+      { path: "./a.bib", sourceType: "markdown-relative" },
+      { path: "C:/b.bib", sourceType: "absolute" },
+    ],
   );
 });
 
-test("serializeBibFileList 会清理空项并按换行序列化", () => {
+test("serializeBibFileList 会清理无效项并按 JSON 序列化", () => {
   assert.equal(
-    serializeBibFileList([" a.bib ", "", "b.bib", null]),
-    "a.bib\nb.bib",
+    serializeBibFileList([
+      { path: " ./a.bib ", sourceType: "markdown-relative" },
+      { path: "", sourceType: "absolute" },
+      null,
+      { path: "C:/b.bib", sourceType: "absolute" },
+    ]),
+    JSON.stringify([
+      { path: "./a.bib", sourceType: "markdown-relative" },
+      { path: "C:/b.bib", sourceType: "absolute" },
+    ]),
   );
 });

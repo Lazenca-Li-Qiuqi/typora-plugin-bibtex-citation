@@ -15,27 +15,37 @@
 ### 2.1 BibTeX 文件列表
 
 - 设置页中的 `BibTeX Files` 以“逐条编辑”的形式维护。
-- 底层设置仍以换行分隔字符串存储。
+- 底层设置使用对象数组序列化，每一条都必须显式声明：
+  - `path`
+  - `sourceType`
 - 空路径不会被加入列表。
-- 当 `Path Base` 为 `Absolute paths only` 时，相对路径会被拒绝。
 
-### 2.2 路径基准
+### 2.2 来源类别与解析规则
 
-- `Relative to the current Markdown file`
-  - 优先相对当前正在编辑的 Markdown 文件目录解析。
-  - 如果当前 Markdown 文件无法确定，会继续回退到 Typora 当前打开目录或进程工作目录。
-- `Relative to the folder currently opened in Typora`
-  - 相对 Typora 当前打开目录解析。
-- `Absolute paths only`
-  - 只接受绝对路径；相对路径不会参与加载。
+- `markdown-relative`
+  - 只按当前正在编辑的 Markdown 文件目录解析。
+  - 若当前 Markdown 文件路径不可确定，则该条配置直接失败。
+- `typora-relative`
+  - 只按 Typora 当前打开目录解析。
+  - 若 Typora 当前打开目录不可确定，则该条配置直接失败。
+- `absolute`
+  - 只接受绝对路径。
+  - 若 `path` 不是绝对路径，则该条配置直接失败。
 
-### 2.3 多文件合并与重复 key
+### 2.3 严格解析原则
+
+- 每一条文件配置只按自己声明的 `sourceType` 解析。
+- 不会从 `markdown-relative` 回退到 Typora 当前打开目录。
+- 不会从 `markdown-relative` 或 `typora-relative` 回退到进程工作目录。
+- 不会因为某条路径无法解析而自动尝试其他来源类别。
+
+### 2.4 多文件合并与重复 key
 
 - 插件会合并所有已配置的 BibTeX 文件。
 - 若多个文件出现相同 `citation key`，以配置列表中更靠前的文件为准。
 - 缺失或不可读取的 BibTeX 文件会被跳过，并输出警告。
 
-### 2.4 文献库缓存
+### 2.5 文献库缓存
 
 - 主控通过 `invalidateLibrary()` 只标记缓存失效，不立即重读。
 - `reloadLibraryNow()` 会显式清空缓存并立刻重读。
@@ -167,14 +177,26 @@
 ## 8. 侧边栏规则
 
 - 侧边栏显示当前配置摘要、当前索引状态、当前文档引用统计与操作按钮。
-- 修改 `Path Base` 或 BibTeX 文件列表后，`Indexed Entries` 会先显示“待刷新 / Refresh needed”。
+- 侧边栏会显示：
+  - 单个 `CSL File`
+  - 已配置 BibTeX 文件数量
+  - 已索引条目数量
+  - 当前文档引用统计
+- 路径类摘要会直接显示 `path (sourceType)`。
+- 修改 BibTeX 文件列表后，`Indexed Entries` 会先显示“待刷新 / Refresh needed”。
 - 侧边栏当前不再显示底部说明文字；行为规则统一以文档为准。
 
 ## 9. 设置页规则
 
 - 支持 `English` 与 `简体中文` 两种显示语言。
 - 切换显示语言后，会立即更新设置页与侧边栏文案，但不会强制重读文献库。
-- `CSL File` 当前只支持配置一个文件。
+- 每一条 BibTeX 文件配置都要分别维护：
+  - `path`
+  - `sourceType`
+- `CSL File` 当前只支持配置一个文件，但也必须单独维护：
+  - `path`
+  - `sourceType`
+- 当前设置页已移除全局 `Path Base`。
 
 ## 10. 当前明确未支持的能力
 

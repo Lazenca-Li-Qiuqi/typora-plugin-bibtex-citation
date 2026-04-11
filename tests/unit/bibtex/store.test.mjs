@@ -11,7 +11,6 @@ import {
 
 setupTyporaTestEnv();
 
-const { PATH_BASE_MODE } = await import(createFreshModuleUrl("src/constants.js"));
 const { BibEntryStore } = await import(createFreshModuleUrl("src/bibtex/store.js"));
 
 function writeFile(filePath, content) {
@@ -24,17 +23,20 @@ function createPlugin(bibFiles) {
     settings: {
       get(key) {
         if (key === "bibFiles") {
-          return bibFiles.join("\n");
-        }
-        if (key === "pathBase") {
-          return PATH_BASE_MODE.ABSOLUTE;
+          return JSON.stringify(
+            bibFiles.map((filePath) => ({
+              path: filePath,
+              sourceType: "absolute",
+            })),
+          );
         }
         return "";
       },
     },
     i18n: {
       t: {
-        absolutePathRequired: "absolute required",
+        invalidFileConfig: "invalid config: ",
+        unresolvableFilePath: "unresolvable: ",
         fileNotFound: "missing: ",
         loadError: "load error: ",
       },

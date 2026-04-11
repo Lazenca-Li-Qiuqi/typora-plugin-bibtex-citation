@@ -79,15 +79,39 @@ const { default: BibCitationPlugin } = await import(createFreshModuleUrl("src/pl
 
 test("onload 会注册设置、侧边栏和建议器，并规范化默认设置", async () => {
   const plugin = new BibCitationPlugin();
-  plugin.settings.set("bibFiles", " a.bib ;\n b.bib ");
-  plugin.settings.set("pathBase", "");
+  plugin.settings.set(
+    "bibFiles",
+    JSON.stringify([
+      { path: " ./a.bib ", sourceType: "markdown-relative" },
+      { path: "C:/b.bib", sourceType: "absolute" },
+    ]),
+  );
+  plugin.settings.set(
+    "cslFile",
+    JSON.stringify({
+      path: " ./styles/apa.csl ",
+      sourceType: "markdown-relative",
+    }),
+  );
   plugin.settings.set("displayLanguage", "");
 
   await plugin.onload();
 
   assert.ok(plugin._settingsRegistration);
-  assert.equal(plugin.settings.get("bibFiles"), "a.bib\nb.bib");
-  assert.equal(plugin.settings.get("pathBase"), "markdown");
+  assert.equal(
+    plugin.settings.get("bibFiles"),
+    JSON.stringify([
+      { path: "./a.bib", sourceType: "markdown-relative" },
+      { path: "C:/b.bib", sourceType: "absolute" },
+    ]),
+  );
+  assert.equal(
+    plugin.settings.get("cslFile"),
+    JSON.stringify({
+      path: "./styles/apa.csl",
+      sourceType: "markdown-relative",
+    }),
+  );
   assert.equal(plugin.settings.get("displayLanguage"), "zh-cn");
   assert.equal(plugin._settingTabs.length, 1);
   assert.equal(plugin._markdownSuggests.length, 1);

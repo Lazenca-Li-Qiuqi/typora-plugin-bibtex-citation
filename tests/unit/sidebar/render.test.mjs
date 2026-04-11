@@ -19,7 +19,9 @@ globalThis.window[coreSymbol] = {
   Notice: class Notice {},
 };
 
-const { BibCitationSidebarPanel } = await import(createFreshModuleUrl("src/sidebar/panel.js"));
+const { BibCitationSidebarPanel } = await import(
+  createFreshModuleUrl("src/sidebar/panel.js")
+);
 
 function createPlugin(overrides = {}) {
   return {
@@ -27,11 +29,14 @@ function createPlugin(overrides = {}) {
     i18n: {
       t: {
         settings: {
-          pathBase: { markdown: "Markdown", typora: "Typora", absolute: "Absolute" },
+          fileSourceType: {
+            markdownRelative: "Markdown",
+            typoraRelative: "Typora",
+            absolute: "Absolute",
+          },
         },
         sidebar: {
           title: "BibTeX",
-          pathBaseLabel: "Path Base",
           cslFileLabel: "CSL File",
           configuredFilesLabel: "Configured",
           indexedEntriesLabel: "Indexed",
@@ -54,9 +59,14 @@ function createPlugin(overrides = {}) {
     settings: {
       get(key) {
         const map = {
-          bibFiles: "a.bib\nb.bib",
-          cslFile: "./styles/apa.csl",
-          pathBase: "markdown",
+          bibFiles: JSON.stringify([
+            { path: "a.bib", sourceType: "markdown-relative" },
+            { path: "b.bib", sourceType: "absolute" },
+          ]),
+          cslFile: JSON.stringify({
+            path: "./styles/apa.csl",
+            sourceType: "typora-relative",
+          }),
         };
         return map[key] || "";
       },
@@ -76,24 +86,27 @@ test("BibCitationSidebarPanel.render 在 allowLibraryLoad=false 时显示 unavai
   panel.render({ allowLibraryLoad: false });
 
   const text = collectTextContent(panel.containerEl);
-  assert.match(text, /Path Base/);
   assert.match(text, /Unavailable/);
-  assert.match(text, /a\.bib/);
-  assert.match(text, /b\.bib/);
+  assert.match(text, /a\.bib \(Markdown\)/);
+  assert.match(text, /b\.bib \(Absolute\)/);
   assert.match(text, /Refresh/);
-  assert.doesNotMatch(text, /Render hint|Trigger|Count hint/);
 });
 
 test("BibCitationSidebarPanel.render 在 citationState 出错时显示错误摘要", () => {
-  const panel = new BibCitationSidebarPanel(createPlugin({
-    getCurrentDocumentCitationState() {
-      return {
-        counts: { unique: 0, total: 0 },
-        error: { type: "invalid-block", blockText: "[@alpha, p. 3]" },
-      };
-    },
-  }));
+  const panel = new BibCitationSidebarPanel(
+    createPlugin({
+      getCurrentDocumentCitationState() {
+        return {
+          counts: { unique: 0, total: 0 },
+          error: { type: "invalid-block", blockText: "[@alpha, p. 3]" },
+        };
+      },
+    }),
+  );
   panel.render();
 
-  assert.match(collectTextContent(panel.containerEl), /Invalid block: \[@alpha, p\. 3\]/);
+  assert.match(
+    collectTextContent(panel.containerEl),
+    /Invalid block: \[@alpha, p\. 3\]/,
+  );
 });

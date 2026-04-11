@@ -79,18 +79,18 @@ npm test
 
 ## 配置 BibTeX 文件路径
 
-启用插件后，打开插件设置，可以在 `BibTeX Files` 区域逐条维护 `.bib` 文件路径，并在 `CSL File` 区域配置单个 `.csl` 样式路径。
+启用插件后，打开插件设置，可以在 `BibTeX Files` 区域逐条维护 `.bib` 文件配置，并在 `CSL File` 区域配置单个 `.csl` 样式文件。
 
 你也可以在设置页顶部通过 `Display Language / 显示语言` 切换插件界面语言。切换后插件会立即更新设置页与侧边栏文案，但不会强制重新读取 `.bib` 文件。
 
 推荐流程：
 
-1. 在 `Path Base` 中选择路径解析方式
-2. 在输入框中填写一个 `.bib` 文件路径
+1. 在输入框中填写一个 `.bib` 文件路径
+2. 为这条路径选择来源类别
 3. 点击 `Add BibTeX File` 添加到列表
-4. 如需修改已有路径，直接编辑对应输入框
+4. 如需修改已有配置，直接编辑对应输入框或来源类别
 5. 如需删除某项，点击该行右侧的 `Remove`
-6. 在 `CSL File` 中填写一个 `.csl` 路径；该项只能配置一个文件
+6. 在 `CSL File` 中填写一个 `.csl` 路径，并单独选择它的来源类别；该项只能配置一个文件
 
 可填写的路径示例：
 
@@ -101,11 +101,11 @@ D:/Literature/shared.bib
 ./styles/american-meteorological-society.csl
 ```
 
-当前支持 3 种路径基准模式：
+当前支持 3 种来源类别：
 
 - `Relative to the current Markdown file`
 - `Relative to the folder currently opened in Typora`
-- `Absolute paths only`
+- `Absolute path`
 
 更完整的路径解析、重复 key 优先级与缓存规则请查看 [docs/behavior-rules.md](docs/behavior-rules.md)。
 
@@ -169,9 +169,9 @@ D:/Literature/shared.bib
 - `Insert / Update Bibliography / 插入/更新参考文献`
 - `Remove Bibliography / 删除参考文献`
 
-面板同时会显示当前 `Path Base`、`CSL File`、已配置 BibTeX 文件数量、已索引条目数量和当前文档中的引用统计（中文界面显示为“共 x 条 / y 次”）。
+面板同时会显示当前 `CSL File`、已配置 BibTeX 文件数量、已索引条目数量和当前文档中的引用统计（中文界面显示为“共 x 条 / y 次”）。BibTeX 与 CSL 的路径摘要会按 `path (sourceType)` 形式展示。
 
-如果你修改了 `Path Base` 或 BibTeX 文件列表，侧边栏中的 `Indexed Entries` 会先显示“待刷新”。此时手动点击 `Refresh Cache`，或直接在文档里输入 `[@query` 触发建议检索，都会重新读取文献库并恢复真实条目数。
+如果你修改了 BibTeX 文件列表，侧边栏中的 `Indexed Entries` 会先显示“待刷新”。此时手动点击 `Refresh Cache`，或直接在文档里输入 `[@query` 触发建议检索，都会重新读取文献库并恢复真实条目数。
 
 四个核心按钮可以这样理解：
 
@@ -201,8 +201,8 @@ D:/Literature/shared.bib
 ### 路径与文件
 
 - 确认 `BibTeX Files` 列表中对应路径仍然存在，且文件扩展名为 `.bib`
-- 若路径没有生效，优先检查拼写、权限问题，以及它是否按照当前 `Path Base` 解析到预期目录
-- 若使用相对路径，确认它是相对于当前 Markdown 文件目录、Typora 当前打开目录，还是只接受绝对路径，这取决于你当前选择的 `Path Base`
+- 若路径没有生效，优先检查拼写、权限问题，以及它是否与当前这条配置声明的来源类别匹配
+- 若使用相对路径，确认该条配置声明的是“相对当前 Markdown 文件”还是“相对 Typora 当前打开目录”；若声明为 `Absolute path`，则必须填写绝对路径
 - 缺失或不可读取的 BibTeX 文件会被跳过，并在控制台输出警告
 
 ### Citation 与 CSL
