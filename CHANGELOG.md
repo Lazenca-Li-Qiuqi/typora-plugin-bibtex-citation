@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.4.2 - 2026-04-11
+
+- 同步 patch 发布状态到 `package.json`、`manifest.json`、`README.md` 与 `AGENTS.md`，将版本号统一更新到 `0.4.2`
+- 修正文档中的轻微漂移：README 现已明确逐条 `sourceType` 文件来源配置，并将当前单元测试数量对齐为 87 条
+
 ## 0.4.1 - 2026-04-11
 
 - 将 BibTeX 与 CSL 文件配置统一改为逐条 `path + sourceType` 结构，移除全局 `Path Base` 与跨类别兜底解析

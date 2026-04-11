@@ -6,7 +6,7 @@
 
 本项目 fork 自 `adam-coates/typora-plugin-zotero`，并在此基础上逐步调整为面向本地 BibTeX 文件的引用工作流。
 
-![Version](https://img.shields.io/badge/version-v0.4.1-2f6feb)
+![Version](https://img.shields.io/badge/version-v0.4.2-2f6feb)
 ![Platform](https://img.shields.io/badge/platform-Windows-1f883d)
 ![Node](https://img.shields.io/badge/node-%3E%3D22-8a2be2)
 ![Typora Plugin](https://img.shields.io/badge/Typora-Community%20Plugin-0a7ea4)
@@ -18,7 +18,7 @@
 - 支持配置单个本地 `.csl` 文件，用于 citation 渲染与 bibliography 更新
 - 在左侧活动栏提供 BibTeX 面板按钮，可执行缓存刷新、citation 渲染/恢复与 bibliography 操作
 - 支持在插件设置中切换 `English` 与 `简体中文` 两种界面语言
-- 支持多 BibTeX 文件、相对路径解析基准与重复 key 优先级控制
+- 支持多 BibTeX 文件、逐条 `sourceType` 路径来源配置与重复 key 优先级控制
 
 ## 环境要求
 
@@ -66,7 +66,7 @@ git clone https://github.com/Lazenca-Liqiuqi/typora-plugin-bibtex-citation.git t
 npm test
 ```
 
-当前测试入口默认执行 `tests/unit/` 下的正式单元测试；`tests/fixtures/` 中的 CSL 样式文件会作为真实样式夹具参与回归。当前测试总量为 86 条。
+当前测试入口默认执行 `tests/unit/` 下的正式单元测试；`tests/fixtures/` 中的 CSL 样式文件会作为真实样式夹具参与回归。当前测试总量为 87 条。
 
 当前实现的完整行为规则、边界与约束已整理到 [docs/behavior-rules.md](docs/behavior-rules.md)。
 
