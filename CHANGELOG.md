@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 0.4.3 - 2026-07-09
+
+- 增加当前 Markdown YAML frontmatter 中的 `bib` 与 `csl` 文档级配置支持；`bib` 会与设置页 `BibTeX Files` 取并集并优先于全局配置，`csl` 会优先于设置页 `CSL File`
+- 收紧 frontmatter 规则：只接受 `bib` 与 `csl` 两个字段，路径始终相对当前 Markdown 文件所在目录解析，避免在文档内混入不自然的来源类别配置
+- 整理测试 harness 分层，将 DOM mock、路径、CSL mock 与动态导入 helper 拆出独立模块，同时删除已弃用的 `LAST_RUN.md`
+- 对齐仓库结构配置：声明 ESM 包类型、将插件平台声明收敛到已验证的 Windows，并简化测试产物忽略规则
+- 补齐 frontmatter 解析、BibTeX 缓存合并、CSL 选择与 harness 分层相关单元测试；当前 `npm test` 已覆盖 95 条测试
+- 本阶段沉淀的维护约束：文档级配置必须保持最小语义面，运行时统一先生成当前生效文件列表，再进入文件级解析缓存与合并缓存，避免设置页、侧边栏和 CSL 操作各自分叉
+
 ## 0.4.2 - 2026-04-11
 
 - 同步 patch 发布状态到 `package.json`、`manifest.json`、`README.md` 与 `AGENTS.md`，将版本号统一更新到 `0.4.2`
