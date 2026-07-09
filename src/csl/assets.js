@@ -1,5 +1,5 @@
 import { resolveCslFilePath } from "../bibtex/path-resolver.js";
-import { parseSingleFileConfig } from "../bibtex/settings.js";
+import { getActiveCslFileConfig } from "../bibtex/source-configs.js";
 import { getPluginRequire } from "./runtime.js";
 
 const fs = window.reqnode("fs");
@@ -22,10 +22,7 @@ export function ensureCslTemplate(plugin) {
 }
 
 function ensureConfiguredTemplate(plugin, config) {
-  const configuredPath = resolveCslFilePath(
-    parseSingleFileConfig(plugin?.settings?.get("cslFile")),
-    plugin,
-  );
+  const configuredPath = resolveCslFilePath(getActiveCslFileConfig(plugin), plugin);
   if (!configuredPath) {
     throw new Error(plugin.i18n.t.cslPathRequired);
   }

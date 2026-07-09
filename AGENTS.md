@@ -23,6 +23,7 @@
 - [`src/plugin/runtime.js`](src/plugin/runtime.js)：主控层的启动注册与设置规范化逻辑，负责设置默认化、设置页/侧边栏/建议器装配
 - [`src/plugin/library-runtime.js`](src/plugin/library-runtime.js) / [`src/plugin/document-state-runtime.js`](src/plugin/document-state-runtime.js)：主控层的文献库缓存、调度刷新与当前文档状态访问薄封装
 - [`src/bibtex/`](src/bibtex)：BibTeX 数据层，负责设置序列化、路径解析、条目解析与缓存；为建议检索、引用校验和 CSL 渲染提供统一条目来源
+- [`src/bibtex/source-configs.js`](src/bibtex/source-configs.js) / [`src/document/frontmatter.js`](src/document/frontmatter.js)：文档级 YAML 文件配置层，负责从当前 Markdown frontmatter 读取 `bib` 与 `csl`，并与设置页配置合并
 - [`src/csl/`](src/csl)：CSL 工作流层，负责模板注册、BibTeX 到 CSL-JSON 映射、citation 渲染、恢复与 bibliography 更新；与 [`src/document/`](src/document) 一起构成“扫描文档 -> 校验 -> 改写”的主链路
 - [`src/document/`](src/document)：文档扫描与当前文档轻量状态层，负责闭合方括号提取、引用统计与错误缓存；被侧边栏摘要和 CSL 操作共同复用
 - [`src/suggest/`](src/suggest)：建议交互层，负责 `[@query]` 触发、候选排序、HTML 渲染和键鼠兜底；直接依赖 BibTeX 数据层，不参与 CSL 改写
@@ -49,6 +50,7 @@
 
 - 通过 `EditorSuggest` 监听未闭合方括号引用中的 `@query` 模式
 - 通过设置项维护多个 BibTeX 文件配置，每条记录都显式声明 `path + sourceType`
+- 当前 Markdown 开头的 YAML frontmatter 可声明文档级 `bib` 与 `csl`，路径始终按当前 Markdown 文件目录解析
 - 路径解析按单条配置的 `sourceType` 严格执行；不再回退到 `process.cwd()` 或其他来源类别
 - 读取并解析配置中的 `.bib` 文件，提取 `key`、`title`、`author`、`year`、`journal` 等字段用于搜索和展示
 - 插入行为只写入 `@citationKey`，也不修改任何 `.bib` 文件
@@ -57,13 +59,14 @@
 
 - 仓库已完成一轮模块化重构，运行时主入口稳定在 [`main.js`](main.js) -> [`src/plugin.js`](src/plugin.js)；主控层当前已收敛为 façade + 子模块拆分结构，后续新增逻辑默认优先落在 `src/` 对应模块
 - 当前核心能力已经覆盖三条主线：BibTeX 检索与建议、当前文档引用统计、基于外部 `CSL File` 的 citation / bibliography 工作流
+- 当前文档级 YAML frontmatter 已接入 BibTeX 缓存与 CSL 模板选择；文档级 BibTeX 排在设置页文件前面，文档级 CSL 优先于设置页 CSL
 - CSL 工作流已接通“渲染/更新引用、恢复引用、插入/更新参考文献、删除参考文献”这条闭环；受控 citation 块已成为长期持久真源
 - 当前开发重点已从建议器交互逐步转向 CSL 能力扩展与 bibliography 工作流完善，尤其是复杂 citation 语法与真机回归稳定性
 - 设置页、侧边栏、显示语言与文档统计的联动已经基本成型，但关键体验仍需要在 Typora 真机中持续回归
 - 当前 README 已收敛到安装、配置、快速使用与最小排查；更细的行为规则统一沉淀在 `docs/behavior-rules.md`
 - 当前平台结论仅限 Windows 真机；Linux 与 macOS 尚未完成系统验证，不应在对外文档中做兼容性承诺
 - 仓库当前已具备受版本控制的 Node 单元测试目录；`tests/` 采用 `unit / support / fixtures` 分层，`tests/output/` 仅保留本地产物
-- 当前 `npm test` 已覆盖 87 条单元测试，核心逻辑层与大部分高宿主耦合层都已有回归保护；已补到 `plugin.onload()`、调度链、`BibEntryStore` 异常分支与设置页关键非法输入
+- 当前 `npm test` 已覆盖 95 条单元测试，核心逻辑层与大部分高宿主耦合层都已有回归保护；已补到 `plugin.onload()`、调度链、`BibEntryStore` 异常分支、frontmatter 文件配置与设置页关键非法输入
 - `src/plugin.js` 已从重型装配文件收敛为 façade；当前主控层职责按 `document-actions / runtime / library-runtime / document-state-runtime` 拆分，继续重构时优先在这些子模块内演进
 - `package.json` 当前仅保留占位性质的 `npm run build`，插件运行不依赖原生构建步骤
 
@@ -81,6 +84,7 @@
 - 只检索设置中列出的 BibTeX 文件，不依赖外部文献管理器或 SQLite；重复 citation key 以更靠前的文件为准
 - BibTeX 路径在设置页中逐条维护，底层序列化为对象数组；每一条都必须显式声明 `path + sourceType`
 - BibTeX 与 CSL 路径解析都已改为逐条 `path + sourceType` 模型；实现时不要再引入基于 `process.cwd()`、Typora 目录或其他来源类别的隐式回退
+- Markdown YAML frontmatter 只支持 `bib` 与 `csl`；文档级配置统一经 `src/document/frontmatter.js` 归一化为 `markdown-relative`，再由 `src/bibtex/source-configs.js` 与设置页配置合并
 - 建议器只在未闭合的方括号引用中触发，例如 `[@key` 或 `[@a; @b`；正文里的裸 `@key` 不再触发
 - 候选项必须返回 HTML 字符串而不是 DOM 节点；建议交互兜底逻辑集中在 [`src/suggest/interactions.js`](src/suggest/interactions.js)
 

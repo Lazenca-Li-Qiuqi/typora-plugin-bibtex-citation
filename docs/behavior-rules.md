@@ -42,6 +42,7 @@
 ### 2.4 多文件合并与重复 key
 
 - 插件会合并所有已配置的 BibTeX 文件。
+- 当前 Markdown YAML frontmatter 中的 `bib` 文件会排在设置页 `BibTeX Files` 前面参与合并。
 - 若多个文件出现相同 `citation key`，以配置列表中更靠前的文件为准。
 - 缺失或不可读取的 BibTeX 文件会被跳过，并输出警告。
 
@@ -50,6 +51,18 @@
 - 主控通过 `invalidateLibrary()` 只标记缓存失效，不立即重读。
 - `reloadLibraryNow()` 会显式清空缓存并立刻重读。
 - `BibEntryStore` 会根据文件 `mtime` 变化决定是否更新缓存内容。
+- 合并缓存会同时区分当前 Markdown 文件路径和 YAML frontmatter 中的 BibTeX 文件列表；切换文档或修改文档级 `bib` 后会重建合并结果。
+
+### 2.6 Markdown YAML 文件配置
+
+- 插件会读取当前 Markdown 开头的 YAML frontmatter。
+- 当前只支持两个文档级字段：
+  - `bib`
+  - `csl`
+- `bib` 支持单个字符串或字符串数组。
+- `csl` 支持单个字符串。
+- YAML 文件配置始终使用 `markdown-relative`，只按当前 Markdown 文件所在目录解析；即使写入 `sourceType` 字段也会被忽略。
+- 文档级 `csl` 优先于设置页 `CSL File`。
 
 ## 3. 建议器规则
 
@@ -179,7 +192,7 @@
 - 侧边栏显示当前配置摘要、当前索引状态、当前文档引用统计与操作按钮。
 - 侧边栏会显示：
   - 单个 `CSL File`
-  - 已配置 BibTeX 文件数量
+  - 当前生效的 BibTeX 文件数量
   - 已索引条目数量
   - 当前文档引用统计
 - 路径类摘要会直接显示 `path (sourceType)`。

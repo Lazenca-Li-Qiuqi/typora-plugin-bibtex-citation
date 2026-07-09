@@ -16,6 +16,7 @@
 - 从一个或多个本地 `.bib` 文件检索文献，并在方括号引用里输入 `@query` 触发候选列表
 - 支持按 `citation key`、标题、作者、期刊、年份等字段搜索并插入引用键
 - 支持配置单个本地 `.csl` 文件，用于 citation 渲染与 bibliography 更新
+- 支持从当前 Markdown 开头的 YAML frontmatter 读取文档级 `bib` 与 `csl` 文件配置
 - 在左侧活动栏提供 BibTeX 面板按钮，可执行缓存刷新、citation 渲染/恢复与 bibliography 操作
 - 支持在插件设置中切换 `English` 与 `简体中文` 两种界面语言
 - 支持多 BibTeX 文件、逐条 `sourceType` 路径来源配置与重复 key 优先级控制
@@ -66,7 +67,7 @@ git clone https://github.com/Lazenca-Liqiuqi/typora-plugin-bibtex-citation.git t
 npm test
 ```
 
-当前测试入口默认执行 `tests/unit/` 下的正式单元测试；`tests/fixtures/` 中的 CSL 样式文件会作为真实样式夹具参与回归。当前测试总量为 87 条。
+当前测试入口默认执行 `tests/unit/` 下的正式单元测试；`tests/fixtures/` 中的 CSL 样式文件会作为真实样式夹具参与回归。当前测试总量为 95 条。
 
 当前实现的完整行为规则、边界与约束已整理到 [docs/behavior-rules.md](docs/behavior-rules.md)。
 
@@ -108,6 +109,23 @@ D:/Literature/shared.bib
 - `Absolute path`
 
 更完整的路径解析、重复 key 优先级与缓存规则请查看 [docs/behavior-rules.md](docs/behavior-rules.md)。
+
+### Markdown YAML 中的文档级配置
+
+你也可以在当前 Markdown 文件开头的 YAML frontmatter 中声明文档专用的 BibTeX 与 CSL 文件：
+
+```yaml
+---
+bib:
+  - ./references.bib
+  - ../shared/library.bib
+csl: ./apa.csl
+---
+```
+
+只支持 `bib` 和 `csl` 两个字段。`bib` 可以是单个字符串或字符串列表，`csl` 是单个字符串。YAML 中的路径始终按当前 Markdown 文件所在目录解析，不支持切换为 Typora 目录或绝对路径来源。
+
+文档级 BibTeX 文件会排在设置页 `BibTeX Files` 前面参与合并；如果出现重复 citation key，当前 Markdown YAML 中更靠前的文件优先。文档级 `csl` 会优先于设置页里的全局 `CSL File`。
 
 ## 使用教学
 

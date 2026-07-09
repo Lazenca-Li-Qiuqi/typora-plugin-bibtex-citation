@@ -1,6 +1,10 @@
 import { parseBibEntries } from "./parser.js";
-import { isFileConfigShapeValid, resolveBibFilePath } from "./path-resolver.js";
-import { parseBibFileList } from "./settings.js";
+import {
+  getActiveMarkdownPath,
+  isFileConfigShapeValid,
+  resolveBibFilePath,
+} from "./path-resolver.js";
+import { getActiveBibFileConfigs } from "./source-configs.js";
 
 const fs = window.reqnode("fs");
 
@@ -15,6 +19,7 @@ export class BibEntryStore {
     this.cache = new Map();
     this.mergedEntries = null;
     this.mergedEntryKeySet = null;
+    this.mergedSourceKey = "";
   }
 
   /**
@@ -26,6 +31,7 @@ export class BibEntryStore {
     this.cache.clear();
     this.mergedEntries = null;
     this.mergedEntryKeySet = null;
+    this.mergedSourceKey = "";
   }
 
   /**
@@ -59,12 +65,22 @@ export class BibEntryStore {
    * 输出：按配置优先级去重后的文献条目数组。
    */
   getEntries() {
-    if (this.mergedEntries) {
+    const bibFiles = getActiveBibFileConfigs(this.plugin);
+    const sourceKey = JSON.stringify({
+      markdownPath: getActiveMarkdownPath() || "",
+      bibFiles,
+    });
+
+    if (this.mergedEntries && this.mergedSourceKey === sourceKey) {
       return this.mergedEntries;
     }
 
-    const bibFiles = parseBibFileList(this.plugin.settings.get("bibFiles"));
-    if (!bibFiles.length) return [];
+    if (!bibFiles.length) {
+      this.mergedEntries = [];
+      this.mergedEntryKeySet = new Set();
+      this.mergedSourceKey = sourceKey;
+      return this.mergedEntries;
+    }
 
     const merged = [];
     const seenKeys = new Set();
@@ -110,6 +126,7 @@ export class BibEntryStore {
 
     this.mergedEntries = merged;
     this.mergedEntryKeySet = seenKeys;
+    this.mergedSourceKey = sourceKey;
     return this.mergedEntries;
   }
 }

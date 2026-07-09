@@ -1,7 +1,10 @@
 const { Notice, SidebarPanel } = window[Symbol.for("typora-plugin-core@v2")];
 
 import { FILE_SOURCE_TYPE } from "../constants.js";
-import { parseBibFileList, parseSingleFileConfig } from "../bibtex/settings.js";
+import {
+  getActiveBibFileConfigs,
+  getActiveCslFileConfig,
+} from "../bibtex/source-configs.js";
 import { summarizeText } from "../utils/html.js";
 
 /**
@@ -41,8 +44,8 @@ export class BibCitationSidebarPanel extends SidebarPanel {
   render(options = {}) {
     const { allowLibraryLoad = true } = options;
     const t = this.plugin.i18n.t.sidebar;
-    const paths = parseBibFileList(this.plugin.settings.get("bibFiles"));
-    const cslFile = parseSingleFileConfig(this.plugin.settings.get("cslFile"));
+    const paths = getActiveBibFileConfigs(this.plugin);
+    const cslFile = getActiveCslFileConfig(this.plugin);
 
     let entryCount = 0;
     let loadError = "";

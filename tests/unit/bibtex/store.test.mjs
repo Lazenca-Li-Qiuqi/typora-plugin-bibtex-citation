@@ -18,8 +18,15 @@ function writeFile(filePath, content) {
   fs.writeFileSync(filePath, content, "utf8");
 }
 
-function createPlugin(bibFiles) {
+function createPlugin(bibFiles, options = {}) {
   return {
+    window: {
+      editor: {
+        getMarkdown() {
+          return options.markdown || "";
+        },
+      },
+    },
     settings: {
       get(key) {
         if (key === "bibFiles") {
@@ -113,4 +120,63 @@ test("BibEntryStore 遇到缺失文件时跳过并输出警告", () => {
   } finally {
     console.warn = originalWarn;
   }
+});
+
+test("BibEntryStore 会合并当前 Markdown frontmatter 中的 bib 文件", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "bib-store-frontmatter-"));
+  const notePath = path.join(tempDir, "paper.md");
+  const frontmatterBib = path.join(tempDir, "frontmatter.bib");
+  const settingsBib = path.join(tempDir, "settings.bib");
+  writeFile(frontmatterBib, `@article{frontkey, title={Frontmatter}, author={Li, Hua}, year={2025}}`);
+  writeFile(settingsBib, `@article{settingkey, title={Settings}, author={Smith, John}, year={2024}}`);
+
+  globalThis.document.querySelector = () => null;
+  globalThis.document.title = `${notePath} - Typora`;
+
+  const store = new BibEntryStore(
+    createPlugin([settingsBib], {
+      markdown: `---
+bib: ./frontmatter.bib
+---
+
+正文`,
+    }),
+  );
+  const entries = store.getEntries();
+
+  assert.deepEqual(entries.map((entry) => entry.key), ["frontkey", "settingkey"]);
+  assert.deepEqual([...store.getEntryKeySet()].sort(), ["frontkey", "settingkey"]);
+});
+
+test("BibEntryStore 在 frontmatter 文件列表变化后会重建合并缓存", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "bib-store-frontmatter-"));
+  const notePath = path.join(tempDir, "paper.md");
+  const firstBib = path.join(tempDir, "first.bib");
+  const secondBib = path.join(tempDir, "second.bib");
+  writeFile(firstBib, `@article{firstkey, title={First}, author={Li, Hua}, year={2025}}`);
+  writeFile(secondBib, `@article{secondkey, title={Second}, author={Wang, Lei}, year={2026}}`);
+
+  globalThis.document.querySelector = () => null;
+  globalThis.document.title = `${notePath} - Typora`;
+
+  let markdown = `---
+bib: ./first.bib
+---
+
+正文`;
+  const store = new BibEntryStore(
+    createPlugin([], {
+      get markdown() {
+        return markdown;
+      },
+    }),
+  );
+
+  assert.deepEqual(store.getEntries().map((entry) => entry.key), ["firstkey"]);
+  markdown = `---
+bib: ./second.bib
+---
+
+正文`;
+  assert.deepEqual(store.getEntries().map((entry) => entry.key), ["secondkey"]);
 });
