@@ -6,5 +6,5 @@
   "version": "0.4.2",
   "minAppVersion": "1.5.0",
   "minCoreVersion": "2.3.16",
-  "platforms": ["win32", "linux", "darwin"]
+  "platforms": ["win32"]
 }

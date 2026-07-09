@@ -11,14 +11,5 @@ out/
 # mise
 mise.toml
 
-# Local tests
-tests/*
-!tests/README.md
-!tests/**/*.mjs
-!tests/fixtures/
-!tests/fixtures/**
-!tests/support/
-!tests/support/**
-!tests/unit/
-!tests/unit/**
+# Test artifacts
 tests/output/

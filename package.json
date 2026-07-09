@@ -3,6 +3,7 @@
   "version": "0.4.2",
   "description": "Typora BibTeX Citation Plugin",
   "author": "Lazenca-Liqiuqi",
+  "type": "module",
   "main": "main.js",
   "scripts": {
     "build": "echo BibTeX-only plugin does not require a build step",
