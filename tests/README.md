@@ -9,6 +9,14 @@
 - `tests/fixtures/`：受版本控制的测试夹具与样式文件
 - `tests/output/`：临时本地调试输出目录，不纳入 Git
 
+## Harness 分层
+
+- `tests/support/typora-test-env.mjs`：兼容性入口，继续导出现有测试使用的 helper，并负责安装最小 Typora 全局环境
+- `tests/support/dom.mjs`：最小 DOM 元素 mock 与文本收集 helper
+- `tests/support/paths.mjs`：测试工作区、CSL fixture 与样式目录路径
+- `tests/support/csl-plugin.mjs`：用于 CSL 模板注册测试的 mock 插件对象
+- `tests/support/module-url.mjs`：动态导入缓存击穿 URL helper
+
 ## 当前约定
 
 - `npm test` 只运行 `tests/unit/` 下的正式单元测试
