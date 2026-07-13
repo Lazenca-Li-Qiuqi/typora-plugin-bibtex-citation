@@ -3,6 +3,10 @@ import {
   createControlledCitationPattern,
   unescapeControlledCitationPayload,
 } from "./controlled-citations.js";
+import {
+  collectValidNarrativeCitationsFromMarkdown,
+  parseStrictNarrativeCitationKey,
+} from "./narrative-citations.js";
 
 /**
  * 功能：解析严格合法的 CSL 引用块，仅接受 `[@key]` 或 `[@a; @b]` 形式。
@@ -41,6 +45,7 @@ export function collectValidCitationBlocksFromRanges(ranges, isKnownKey) {
       return {
         range,
         keys,
+        citationMode: "normal",
       };
     })
     .filter(Boolean);
@@ -69,8 +74,8 @@ export function collectValidControlledCitationBlocksFromMarkdown(markdown, isKno
 
   while ((match = pattern.exec(source)) !== null) {
     const rawCitationBlock = unescapeControlledCitationPayload(match[1]);
-    const keys = parseStrictCitationKeys(rawCitationBlock);
-    if (!keys || !keys.every((key) => isKnownKey(key))) {
+    const citation = parseCitationSourceText(rawCitationBlock);
+    if (!citation || !citation.keys.every((key) => isKnownKey(key))) {
       continue;
     }
 
@@ -80,7 +85,8 @@ export function collectValidControlledCitationBlocksFromMarkdown(markdown, isKno
         end: match.index + match[0].length,
         text: rawCitationBlock,
       },
-      keys,
+      keys: citation.keys,
+      citationMode: citation.citationMode,
       sourceType: "controlled",
     });
   }
@@ -100,9 +106,10 @@ export function collectCitationSourcesFromMarkdown(markdown, isKnownKey) {
     ...block,
     sourceType: "visible",
   }));
+  const narrativeBlocks = collectValidNarrativeCitationsFromMarkdown(source, isKnownKey);
   const controlledBlocks = collectValidControlledCitationBlocksFromMarkdown(source, isKnownKey);
 
-  return [...visibleBlocks, ...controlledBlocks].sort((left, right) => {
+  return [...visibleBlocks, ...narrativeBlocks, ...controlledBlocks].sort((left, right) => {
     if (left.range.start !== right.range.start) {
       return left.range.start - right.range.start;
     }
@@ -113,6 +120,31 @@ export function collectCitationSourcesFromMarkdown(markdown, isKnownKey) {
 
     return left.sourceType === "visible" ? -1 : 1;
   });
+}
+
+/**
+ * 功能：解析受控 citation 中保存的原始引用语法。
+ * 输入：严格括号式 `[@key]` / `[@a; @b]` 或叙述式 `@key` 文本。
+ * 输出：包含 key 与 citation 模式的对象；不支持的语法返回 null。
+ */
+export function parseCitationSourceText(text) {
+  const normalKeys = parseStrictCitationKeys(text);
+  if (normalKeys) {
+    return {
+      keys: normalKeys,
+      citationMode: "normal",
+    };
+  }
+
+  const narrativeKey = parseStrictNarrativeCitationKey(text);
+  if (narrativeKey) {
+    return {
+      keys: [narrativeKey],
+      citationMode: "narrative",
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -174,15 +206,15 @@ export function findFirstInvalidCitationProblem(markdown, isKnownKey) {
   let match;
   while ((match = controlledPattern.exec(source)) !== null) {
     const rawCitationBlock = unescapeControlledCitationPayload(match[1]);
-    const keys = parseStrictCitationKeys(rawCitationBlock);
-    if (!keys) {
+    const citation = parseCitationSourceText(rawCitationBlock);
+    if (!citation) {
       return {
         type: "invalid-block",
         blockText: rawCitationBlock,
       };
     }
 
-    const unknownKey = keys.find((key) => !isKnownKey(key));
+    const unknownKey = citation.keys.find((key) => !isKnownKey(key));
     if (unknownKey) {
       return {
         type: "unknown-key",

@@ -2,7 +2,7 @@ import { toCslItem } from "./item.js";
 import { getPluginRequire } from "./runtime.js";
 import {
   collectCitationSourcesFromMarkdown,
-  parseStrictCitationKeys,
+  parseCitationSourceText,
 } from "./citation-blocks.js";
 import {
   CITATION_END_MARKER,
@@ -33,12 +33,13 @@ export function renderCitationMarkdown(markdown, entries, templateName) {
   const citationItems = createCitationItems(citationSources, entryMap);
   const cite = new Cite(citationItems);
   const citationOrder = createCitationOrder(citationSources, cite, templateName);
-  const citationKeyClusters = citationSources.map((citationSource) => (
-    sortCitationKeys(citationSource.keys, citationOrder)
-  ));
+  const citationClusters = citationSources.map((citationSource) => ({
+    keys: sortCitationKeys(citationSource.keys, citationOrder),
+    citationMode: citationSource.citationMode,
+  }));
   const renderedCitationClusters = renderCitationClusters(
     citationItems,
-    citationKeyClusters,
+    citationClusters,
     templateName,
   );
   let cursor = 0;
@@ -86,7 +87,8 @@ export function restoreCitationMarkdown(markdown) {
 
   const nextMarkdown = source.replace(CONTROLLED_CITATION_PATTERN, (_, rawCitationBlock) => {
     const restoredBlock = unescapeControlledCitationPayload(rawCitationBlock);
-    const keys = parseStrictCitationKeys(restoredBlock) || [];
+    const citation = parseCitationSourceText(restoredBlock);
+    const keys = citation?.keys || [];
     restoredBlocks += 1;
     restoredKeys += keys.length;
     return restoredBlock;

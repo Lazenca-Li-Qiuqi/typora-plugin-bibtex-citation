@@ -1,6 +1,7 @@
 const { EditorSuggest } = window[Symbol.for("typora-plugin-core@v2")];
 
 import { MAX_SUGGESTIONS } from "../constants.js";
+import { findNarrativeCitationQuery } from "../csl/narrative-citations.js";
 import { renderBibSuggestion } from "./render.js";
 
 /**
@@ -19,13 +20,17 @@ export class BibCitationSuggest extends EditorSuggest {
   findQuery(text) {
     const lastOpenBracket = text.lastIndexOf("[");
     const lastCloseBracket = text.lastIndexOf("]");
-    if (lastOpenBracket <= lastCloseBracket) {
-      return { isMatched: false, query: "" };
+    if (lastOpenBracket > lastCloseBracket) {
+      const bracketContent = text.slice(lastOpenBracket + 1);
+      const match = bracketContent.match(/(?:^|;\s*)@([^@\]\s;]*)$/);
+      return { isMatched: !!match, query: match ? match[1] : "" };
     }
 
-    const bracketContent = text.slice(lastOpenBracket + 1);
-    const match = bracketContent.match(/(?:^|;\s*)@([^@\]\s;]*)$/);
-    return { isMatched: !!match, query: match ? match[1] : "" };
+    const narrativeQuery = findNarrativeCitationQuery(text);
+    return {
+      isMatched: narrativeQuery !== null,
+      query: narrativeQuery || "",
+    };
   }
 
   getSuggestions(query) {

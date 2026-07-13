@@ -336,6 +336,25 @@ test("renderCitationMarkdown 在所有真实 CSL 样式下都能产出非空 bib
   }
 });
 
+test("renderCitationMarkdown 使用 CSL composite 模式渲染并恢复叙述式引用", () => {
+  const templateName = ensureCslTemplate(createMockPluginForStyle("apa.csl"));
+  const narrativeEntry = entries.find((entry) => entry.key === "doe2020background");
+  const source = "@doe2020background 认为背景理论仍然适用。";
+  const renderResult = renderCitationMarkdown(source, [narrativeEntry], templateName);
+
+  assert.equal(renderResult.renderedBlocks, 1);
+  assert.equal(renderResult.renderedKeys, 1);
+  assert.match(
+    renderResult.markdown,
+    /<!-- bibtex-citation:citation:start @doe2020background -->Doe \(2020\)<!-- bibtex-citation:citation:end -->/,
+  );
+
+  const restoreResult = restoreCitationMarkdown(renderResult.markdown);
+  assert.equal(restoreResult.markdown, source);
+  assert.equal(restoreResult.renderedBlocks, 1);
+  assert.equal(restoreResult.renderedKeys, 1);
+});
+
 test("renderCitationMarkdown 每次批量渲染只创建一次 citation processor", () => {
   const config = pluginRequire("@citation-js/core").plugins.config.get("@csl");
   const originalEngine = config.engine;
@@ -365,6 +384,10 @@ test("renderCitationClusters 与逐块 Citation.js 上下文渲染结果一致",
     ["doe2020background"],
     ["smith2023history", "smith2024a-ocean"],
   ];
+  const citationClusters = citationKeyClusters.map((keys) => ({
+    keys,
+    citationMode: "normal",
+  }));
   const cite = new Cite(citationItems);
   const expected = citationKeyClusters.map((keys, index) => cite.format("citation", {
     template: templateName,
@@ -375,7 +398,7 @@ test("renderCitationClusters 与逐块 Citation.js 上下文渲染结果一致",
   }));
 
   assert.deepEqual(
-    renderCitationClusters(citationItems, citationKeyClusters, templateName),
+    renderCitationClusters(citationItems, citationClusters, templateName),
     expected,
   );
 });

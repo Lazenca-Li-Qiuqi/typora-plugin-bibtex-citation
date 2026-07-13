@@ -12,6 +12,7 @@ const { extractClosedBracketRanges } = await import(createFreshModuleUrl("src/do
 const {
   collectCitationSourcesFromMarkdown,
   findFirstInvalidCitationProblem,
+  parseCitationSourceText,
   parseStrictCitationKeys,
 } = await import(createFreshModuleUrl("src/csl/citation-blocks.js"));
 const {
@@ -40,6 +41,18 @@ test("parseStrictCitationKeys 拒绝 locator、prefix 与复杂 cluster", () => 
   assert.equal(parseStrictCitationKeys("[@smith2024, p. 3]"), null);
   assert.equal(parseStrictCitationKeys("[see @smith2024]"), null);
   assert.equal(parseStrictCitationKeys("[@smith2024; see @doe2023]"), null);
+});
+
+test("parseCitationSourceText 区分严格括号式与 Pandoc 叙述式引用", () => {
+  assert.deepEqual(parseCitationSourceText("[@smith2024]"), {
+    keys: ["smith2024"],
+    citationMode: "normal",
+  });
+  assert.deepEqual(parseCitationSourceText("@smith2024"), {
+    keys: ["smith2024"],
+    citationMode: "narrative",
+  });
+  assert.equal(parseCitationSourceText("[see @smith2024]"), null);
 });
 
 test("extractClosedBracketRanges 提取单行多个闭合方括号块", () => {
@@ -81,6 +94,28 @@ test("collectCitationSourcesFromMarkdown 同时收集 visible 与 controlled 引
       { sourceType: "visible", text: "[@visible]", keys: ["visible"] },
       { sourceType: "controlled", text: "[@controlled]", keys: ["controlled"] },
       { sourceType: "visible", text: "[@tail]", keys: ["tail"] },
+    ],
+  );
+});
+
+test("collectCitationSourcesFromMarkdown 合并括号式、叙述式与受控叙述式来源", () => {
+  const controlled = `${CITATION_START_MARKER}${escapeControlledCitationPayload("@controlled")} -->Controlled (2024)${CITATION_END_MARKER}`;
+  const markdown = `@narrative 认为如此 [@normal]\n${controlled}`;
+  const sources = collectCitationSourcesFromMarkdown(
+    markdown,
+    (key) => ["narrative", "normal", "controlled"].includes(key),
+  );
+
+  assert.deepEqual(
+    sources.map((source) => ({
+      text: source.range.text,
+      citationMode: source.citationMode,
+      sourceType: source.sourceType,
+    })),
+    [
+      { text: "@narrative", citationMode: "narrative", sourceType: "visible" },
+      { text: "[@normal]", citationMode: "normal", sourceType: "visible" },
+      { text: "@controlled", citationMode: "narrative", sourceType: "controlled" },
     ],
   );
 });

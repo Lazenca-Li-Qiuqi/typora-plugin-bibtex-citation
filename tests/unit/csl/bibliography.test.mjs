@@ -88,6 +88,20 @@ test("upsertBibliographyMarkdown 能根据 visible citation 插入 bibliography"
   assert.match(result.markdown, /Forecast Skill/);
 });
 
+test("upsertBibliographyMarkdown 会把叙述式引用加入 bibliography", () => {
+  const templateName = createTemplateName();
+  const result = upsertBibliographyMarkdown(
+    "@smith2024 认为预报技巧有所提升。\n",
+    entries,
+    templateName,
+    "References",
+  );
+
+  assert.equal(result.changed, true);
+  assert.equal(result.keyCount, 1);
+  assert.match(result.markdown, /Forecast Skill/);
+});
+
 test("upsertBibliographyMarkdown 能根据受控 citation 真源插入 bibliography", () => {
   const templateName = createTemplateName();
   const markdown = `${createControlledCitation("[@doe2023]")}\n`;

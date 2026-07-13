@@ -29,11 +29,15 @@ function createSuggest() {
   });
 }
 
-test("BibCitationSuggest.findQuery 仅在未闭合方括号中匹配", () => {
+test("BibCitationSuggest.findQuery 支持严格括号式与独立叙述式查询", () => {
   const suggest = createSuggest();
   assert.deepEqual(suggest.findQuery("prefix [@smi"), { isMatched: true, query: "smi" });
   assert.deepEqual(suggest.findQuery("prefix [@a; @do"), { isMatched: true, query: "do" });
   assert.deepEqual(suggest.findQuery("closed [@smi]"), { isMatched: false, query: "" });
+  assert.deepEqual(suggest.findQuery("@smi"), { isMatched: true, query: "smi" });
+  assert.deepEqual(suggest.findQuery("根据 @smi"), { isMatched: true, query: "smi" });
+  assert.deepEqual(suggest.findQuery("根据@smi"), { isMatched: false, query: "" });
+  assert.deepEqual(suggest.findQuery("mail@smi"), { isMatched: false, query: "" });
 });
 
 test("BibCitationSuggest.getSuggestions 按 key 前缀优先并屏蔽精确命中", () => {

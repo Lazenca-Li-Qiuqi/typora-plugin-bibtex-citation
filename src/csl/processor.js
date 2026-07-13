@@ -6,11 +6,11 @@ pluginRequire("@citation-js/plugin-csl");
 
 /**
  * 功能：使用单个 citeproc 实例批量渲染整篇文档的 citation cluster。
- * 输入：CSL-JSON 条目、按文档顺序排列的 citation key 数组、CSL 模板名。
- * 输出：与 citation key 数组一一对应的 HTML citation 字符串数组。
+ * 输入：CSL-JSON 条目、按文档顺序排列的 citation cluster、CSL 模板名。
+ * 输出：与 citation cluster 一一对应的 HTML citation 字符串数组。
  */
-export function renderCitationClusters(cslItems, citationKeyClusters, templateName) {
-  if (!citationKeyClusters.length) {
+export function renderCitationClusters(cslItems, citationClusters, templateName) {
+  if (!citationClusters.length) {
     return [];
   }
 
@@ -21,11 +21,12 @@ export function renderCitationClusters(cslItems, citationKeyClusters, templateNa
     undefined,
     "html",
   );
-  const citations = citationKeyClusters.map((keys, index) => ({
+  const citations = citationClusters.map((cluster, index) => ({
     citationID: `bibtex-citation-${index}`,
-    citationItems: keys.map((id) => ({ id })),
+    citationItems: cluster.keys.map((id) => ({ id })),
     properties: {
       noteIndex: 0,
+      ...(cluster.citationMode === "narrative" ? { mode: "composite" } : {}),
     },
   }));
 

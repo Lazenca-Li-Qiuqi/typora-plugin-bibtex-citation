@@ -39,6 +39,21 @@ test("CurrentDocumentState 能统计正文中的单个 citation block", () => {
   });
 });
 
+test("CurrentDocumentState 能统计正文与受控块中的叙述式引用", () => {
+  const state = new CurrentDocumentState();
+  const markdown = [
+    "@alpha 认为如此。",
+    createControlledCitation("@beta", "Beta (2024)"),
+    "账号 @unknown 保持普通文本。",
+  ].join("\n");
+  const result = state.getCitationState(markdown, new Set(["alpha", "beta"]));
+
+  assert.deepEqual(result, {
+    counts: { unique: 2, total: 2 },
+    error: null,
+  });
+});
+
 test("CurrentDocumentState 能统计正文中多块多 key 的引用", () => {
   const state = new CurrentDocumentState();
   const markdown = "A [@alpha; @beta]\nB [@beta]\nC [@gamma]";
