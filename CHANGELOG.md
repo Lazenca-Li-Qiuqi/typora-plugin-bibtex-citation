@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.4.4 - 2026-07-13
+
+- 优化批量文内引用渲染：整篇文档共享单个 citeproc processor，一次性计算全部 citation cluster，避免每个引用块重复创建 CSL 引擎并重建全文上下文
+- 移除逐块渲染路径中的全量 `indexOf`、`slice` 与前后文映射，显著降低大量引用块场景下的重复计算和主线程停顿
+- 增加 processor 创建次数与新旧 Citation.js 输出等价性回归测试；当前 `npm test` 已覆盖 97 条测试
+- 本阶段沉淀的性能约束：文档级 CSL 渲染应按“准备全部 cluster、单次重建 processor 状态、按顺序回填结果”组织，后续不得退回逐块重建全文上下文
+
 ## 0.4.3 - 2026-07-09
 
 - 增加当前 Markdown YAML frontmatter 中的 `bib` 与 `csl` 文档级配置支持；`bib` 会与设置页 `BibTeX Files` 取并集并优先于全局配置，`csl` 会优先于设置页 `CSL File`
