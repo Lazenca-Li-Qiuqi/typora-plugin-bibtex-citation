@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 0.4.5 - 2026-07-13
+
+- 增加 Pandoc 风格叙述式引用 `@key`：通过 citeproc `composite` 模式生成 `Smith (2024)` 一类 CSL 输出，并由受控 citation 块保留原始语法以支持重复更新与恢复
+- 保持方括号语法严格不变；裸引用采用 Pandoc citation key 词法并排除 YAML、HTML、代码、方括号、邮箱与 URL 上下文，同时只把当前 BibTeX 文献库中已知的独立 key 识别为引用
+- 将叙述式引用接入建议器、当前文档统计、统一引用源提取与 bibliography 工作流，使括号式、叙述式和受控 citation 共用同一条处理链路
+- 同步 README、行为规则与项目记忆，明确当前尚不支持 `-@key`、叙述式 locator、prefix、suffix、复杂 cluster 与 note-style citation
+- 补充 Pandoc key 标点、误判排除、CSL composite 渲染、恢复、统计和 bibliography 回归测试；当前 `npm test` 已覆盖 106 条测试
+- 本阶段沉淀的维护约束：新增 citation 语法必须在独立扫描层中收紧词法与正文上下文，再进入统一引用源模型；不得通过放宽现有严格方括号解析来复用实现
+
 ## 0.4.4 - 2026-07-13
 
 - 优化批量文内引用渲染：整篇文档共享单个 citeproc processor，一次性计算全部 citation cluster，避免每个引用块重复创建 CSL 引擎并重建全文上下文
