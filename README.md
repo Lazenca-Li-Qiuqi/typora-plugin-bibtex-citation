@@ -1,12 +1,12 @@
 # typora-plugin-bibtex-citation
 
-`typora-plugin-bibtex-citation` 是一个 Typora Community Plugin 插件，用于在 Typora 的方括号引用语法中输入 `@query` 时，从一个或多个已配置的本地 BibTeX 文件中检索文献条目，并插入对应的引用键；也支持基于单个本地 `.csl` 文件把严格合法的 citation block 渲染为文中引用。
+`typora-plugin-bibtex-citation` 是一个 Typora Community Plugin 插件，用于在 Typora 中输入方括号式或叙述式 `@query` 时，从一个或多个已配置的本地 BibTeX 文件中检索文献条目，并插入对应的引用键；也支持基于单个本地 `.csl` 文件把合法 citation source 渲染为文中引用。
 
 插件只会读取你在设置中配置的 `.bib` 文件与 `.csl` 文件，并在文档中插入 citation key 或渲染后的文中引用。它不会修改任何 `.bib` 文件，也不依赖外部参考文献管理器或 SQLite。
 
 本项目 fork 自 `adam-coates/typora-plugin-zotero`，并在此基础上逐步调整为面向本地 BibTeX 文件的引用工作流。
 
-![Version](https://img.shields.io/badge/version-v0.4.2-2f6feb)
+![Version](https://img.shields.io/badge/version-v0.4.5-2f6feb)
 ![Platform](https://img.shields.io/badge/platform-Windows-1f883d)
 ![Node](https://img.shields.io/badge/node-%3E%3D22-8a2be2)
 ![Typora Plugin](https://img.shields.io/badge/Typora-Community%20Plugin-0a7ea4)
@@ -142,9 +142,9 @@ csl: ./apa.csl
 }
 ```
 
-### 2. 在方括号引用中输入 `@query`
+### 2. 输入 `@query`
 
-在 Markdown 文档里先输入 `[`，再在方括号内输入 `@` 和检索关键词。你可以按以下信息搜索：
+在 Markdown 文档里输入方括号式 `[@query`，或在独立正文位置输入叙述式 `@query`。你可以按以下信息搜索：
 
 - `citation key`
 - 标题
@@ -159,6 +159,8 @@ csl: ./apa.csl
 [@2024
 [@example
 [@smith2024example; @doe
+@smith
+根据 @smith
 ```
 
 ### 3. 选择候选项并插入引用
@@ -175,6 +177,14 @@ csl: ./apa.csl
 [@smith2024example; @doe2023study]
 ```
 
+叙述式引用示例：
+
+```text
+@smith2024example 认为该方法能够改善预报技巧。
+```
+
+在 APA 等作者—年份样式下，叙述式引用通常会渲染为 `Smith (2024) 认为……`。为避免把邮箱、URL 或普通账号误当引用，裸 `@key` 必须位于独立正文边界，并且 key 必须存在于当前 BibTeX 文献库中。
+
 候选列表插入这一步只会写入引用键，不会自动展开完整参考文献格式，也不会修改原始 `.bib` 文件。
 
 ### 4. 使用侧边栏操作
@@ -189,12 +199,12 @@ csl: ./apa.csl
 
 面板同时会显示当前 `CSL File`、已配置 BibTeX 文件数量、已索引条目数量和当前文档中的引用统计（中文界面显示为“共 x 条 / y 次”）。BibTeX 与 CSL 的路径摘要会按 `path (sourceType)` 形式展示。
 
-如果你修改了 BibTeX 文件列表，侧边栏中的 `Indexed Entries` 会先显示“待刷新”。此时手动点击 `Refresh Cache`，或直接在文档里输入 `[@query` 触发建议检索，都会重新读取文献库并恢复真实条目数。
+如果你修改了 BibTeX 文件列表，侧边栏中的 `Indexed Entries` 会先显示“待刷新”。此时手动点击 `Refresh Cache`，或直接在文档里输入 `[@query` / 独立的 `@query` 触发建议检索，都会重新读取文献库并恢复真实条目数。
 
 四个核心按钮可以这样理解：
 
-- `Render / Update Citations`：把严格合法的 `[@key]` / `[@a; @b]` 或已有受控 citation 块渲染为当前 CSL 样式的文中引用
-- `Restore Citations`：把受控 citation 块恢复成原始 `[@key]`
+- `Render / Update Citations`：把严格合法的 `[@key]` / `[@a; @b]`、叙述式 `@key` 或已有受控 citation 块渲染为当前 CSL 样式的文中引用
+- `Restore Citations`：把受控 citation 块恢复成原始 `[@key]`、`[@a; @b]` 或 `@key`
 - `Insert / Update Bibliography`：根据当前文档中的合法引用源生成或更新受控 bibliography 块
 - `Remove Bibliography`：只删除本插件生成的受控 bibliography 块
 
@@ -202,9 +212,9 @@ csl: ./apa.csl
 
 ## CSL 支持边界
 
-- 当前支持严格形式的 `[@key]` 与 `[@a; @b]`，并支持 bibliography 更新、同作者同年消歧、数字型引用与上标型数字引用。
+- 当前支持严格方括号形式 `[@key]` / `[@a; @b]` 与 Pandoc 风格叙述式 `@key`，并支持 bibliography 更新、同作者同年消歧、数字型引用与上标型数字引用。
 - 当前 citation 排序、citation-number 与 bibliography 顺序由 `.csl` 样式和 CSL 处理器决定，插件不手写排序规则。
-- 当前不支持 prefix、locator、suffix、更复杂 citation cluster，以及 note-style citation。
+- 当前不支持 `-@key`、叙述式 locator、prefix、suffix、更复杂 citation cluster，以及 note-style citation。
 - 更完整的规则、边界与真源约束请直接查看 [docs/behavior-rules.md](docs/behavior-rules.md)。
 
 ## 常见排查

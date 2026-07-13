@@ -5,8 +5,8 @@
 - 项目名称：`typora-plugin-bibtex-citation`
 - 当前目标仓库名为 `typora-plugin-bibtex-citation`；但插件运行标识、受控注释前缀与当前工作区目录仍可能暂时保留 `bibtex-citation`
 - 项目类型：Typora Community Plugin 插件
-- 当前最新已发布版本：`0.4.2`
-- 主要功能：在 Typora 的方括号引用语法中输入 `@query` 时，从配置的多个 BibTeX 文件中检索文献条目并插入引用键
+- 当前最新已发布版本：`0.4.5`
+- 主要功能：在 Typora 中输入方括号式或叙述式 `@query` 时，从配置的多个 BibTeX 文件中检索文献条目，并通过 CSL 渲染 citation 与 bibliography
 - 运行依赖：
   - Typora Community Plugin Framework
   - 一个或多个本地 `.bib` 文件
@@ -24,9 +24,9 @@
 - [`src/plugin/library-runtime.js`](src/plugin/library-runtime.js) / [`src/plugin/document-state-runtime.js`](src/plugin/document-state-runtime.js)：主控层的文献库缓存、调度刷新与当前文档状态访问薄封装
 - [`src/bibtex/`](src/bibtex)：BibTeX 数据层，负责设置序列化、路径解析、条目解析与缓存；为建议检索、引用校验和 CSL 渲染提供统一条目来源
 - [`src/bibtex/source-configs.js`](src/bibtex/source-configs.js) / [`src/document/frontmatter.js`](src/document/frontmatter.js)：文档级 YAML 文件配置层，负责从当前 Markdown frontmatter 读取 `bib` 与 `csl`，并与设置页配置合并
-- [`src/csl/`](src/csl)：CSL 工作流层，负责模板注册、BibTeX 到 CSL-JSON 映射、citation 渲染、恢复与 bibliography 更新；与 [`src/document/`](src/document) 一起构成“扫描文档 -> 校验 -> 改写”的主链路
+- [`src/csl/`](src/csl)：CSL 工作流层，负责 Pandoc 风格叙述式扫描、模板注册、BibTeX 到 CSL-JSON 映射、citation 渲染、恢复与 bibliography 更新；与 [`src/document/`](src/document) 一起构成“扫描文档 -> 校验 -> 改写”的主链路
 - [`src/document/`](src/document)：文档扫描与当前文档轻量状态层，负责闭合方括号提取、引用统计与错误缓存；被侧边栏摘要和 CSL 操作共同复用
-- [`src/suggest/`](src/suggest)：建议交互层，负责 `[@query]` 触发、候选排序、HTML 渲染和键鼠兜底；直接依赖 BibTeX 数据层，不参与 CSL 改写
+- [`src/suggest/`](src/suggest)：建议交互层，负责 `[@query]` 与独立叙述式 `@query` 触发、候选排序、HTML 渲染和键鼠兜底；直接依赖 BibTeX 数据层，不参与 CSL 改写
 - [`src/settings/`](src/settings)：设置 UI 层，负责维护 BibTeX/CSL 路径、逐条来源类别和显示语言；设置变更后通过 [`src/plugin.js`](src/plugin.js) 驱动缓存失效和轻量重绘
 - [`src/constants.js`](src/constants.js) / [`src/i18n.js`](src/i18n.js)：共享常量与文案层，被设置页、侧边栏和主控装配共同依赖
 - [`src/utils/`](src/utils)：通用小工具，当前主要提供 HTML、文本压缩与错误摘要辅助，尽量保持无宿主耦合
@@ -48,7 +48,7 @@
 
 ### 技术路线
 
-- 通过 `EditorSuggest` 监听未闭合方括号引用中的 `@query` 模式
+- 通过 `EditorSuggest` 监听未闭合方括号引用和独立正文位置中的 `@query` 模式
 - 通过设置项维护多个 BibTeX 文件配置，每条记录都显式声明 `path + sourceType`
 - 当前 Markdown 开头的 YAML frontmatter 可声明文档级 `bib` 与 `csl`，路径始终按当前 Markdown 文件目录解析
 - 路径解析按单条配置的 `sourceType` 严格执行；不再回退到 `process.cwd()` 或其他来源类别
@@ -66,7 +66,7 @@
 - 当前 README 已收敛到安装、配置、快速使用与最小排查；更细的行为规则统一沉淀在 `docs/behavior-rules.md`
 - 当前平台结论仅限 Windows 真机；Linux 与 macOS 尚未完成系统验证，不应在对外文档中做兼容性承诺
 - 仓库当前已具备受版本控制的 Node 单元测试目录；`tests/` 采用 `unit / support / fixtures` 分层，`tests/output/` 仅保留本地产物
-- 当前 `npm test` 已覆盖 95 条单元测试，核心逻辑层与大部分高宿主耦合层都已有回归保护；已补到 `plugin.onload()`、调度链、`BibEntryStore` 异常分支、frontmatter 文件配置与设置页关键非法输入
+- 当前 `npm test` 已覆盖 106 条单元测试，核心逻辑层与大部分高宿主耦合层都已有回归保护；已补到叙述式扫描边界、CSL composite 渲染、`plugin.onload()`、调度链、`BibEntryStore` 异常分支、frontmatter 文件配置与设置页关键非法输入
 - `src/plugin.js` 已从重型装配文件收敛为 façade；当前主控层职责按 `document-actions / runtime / library-runtime / document-state-runtime` 拆分，继续重构时优先在这些子模块内演进
 - `package.json` 当前仅保留占位性质的 `npm run build`，插件运行不依赖原生构建步骤
 
@@ -85,26 +85,26 @@
 - BibTeX 路径在设置页中逐条维护，底层序列化为对象数组；每一条都必须显式声明 `path + sourceType`
 - BibTeX 与 CSL 路径解析都已改为逐条 `path + sourceType` 模型；实现时不要再引入基于 `process.cwd()`、Typora 目录或其他来源类别的隐式回退
 - Markdown YAML frontmatter 只支持 `bib` 与 `csl`；文档级配置统一经 `src/document/frontmatter.js` 归一化为 `markdown-relative`，再由 `src/bibtex/source-configs.js` 与设置页配置合并
-- 建议器只在未闭合的方括号引用中触发，例如 `[@key` 或 `[@a; @b`；正文里的裸 `@key` 不再触发
+- 建议器支持未闭合方括号中的 `[@key` / `[@a; @b`，以及位于独立正文边界的叙述式 `@key`；中文紧贴、邮箱、URL 与代码上下文不触发叙述式建议
 - 候选项必须返回 HTML 字符串而不是 DOM 节点；建议交互兜底逻辑集中在 [`src/suggest/interactions.js`](src/suggest/interactions.js)
 
 #### 当前文档状态与侧边栏
 
-- 当前文档引用统计依赖闭合方括号扫描和合法 key 校验；文档状态缓存与错误信息由 [`src/document/`](src/document) 统一维护
+- 当前文档引用统计统一读取严格方括号、已知叙述式 key 与受控 citation 真源；文档状态缓存与错误信息由 [`src/document/`](src/document) 统一维护
 - 插件主控通过 `invalidateLibrary()` 标记文献库失效，通过 `reloadLibraryNow()` 执行显式重读；不要混用两者语义
 - 侧边栏展示的是 BibTeX 文献库状态、当前文档引用统计和 CSL 操作入口；相关状态刷新优先复用主控已有的轻量重绘链路
 
 #### CSL 工作流
 
-- `Render / Update Citations` 会同时处理严格合法的可见 `[@key]` / `[@a; @b]` 与已有受控 citation 块；带前缀说明、locator、未知 key 或逗号分隔的可见块不会参与改写
+- `Render / Update Citations` 会同时处理严格合法的可见 `[@key]` / `[@a; @b]`、独立且 key 已知的叙述式 `@key` 与已有受控 citation 块；带前缀说明、locator、未知 key 或逗号分隔的可见方括号块不会参与改写
 - 所有 CSL 文档改写前都会重新扫描全文；只要任意闭合方括号块中出现未知 key 或非严格 CSL 语法，就直接报错并停止
 - CSL 相关模块必须保持懒加载，并通过 `createRequire(import.meta.url)` 解析插件目录内的 `@citation-js/*` 依赖，否则 Typora 设置页与侧边栏可能整块消失
-- citation 渲染优先使用 CSL 的 `html` 输出；同作者同年消歧按整篇文档上下文与 bibliography 排序稳定计算
+- citation 渲染优先使用 CSL 的 `html` 输出；叙述式引用使用 citeproc `composite` 模式，同作者同年消歧按整篇文档上下文与 bibliography 排序稳定计算
 
 #### Bibliography 与引用源
 
-- 受控 citation 块中的原始 `[@key]` 是长期持久真源；不要尝试从 `(Smith, 2024)`、`[1]` 或 `<sup>1</sup>` 逆向解析回 key
-- 统一引用源提取同时识别正文里的严格 `[@key]` 与受控 citation 注释中保存的原始 `[@key]`；bibliography、统计和相关校验都应复用这套来源模型
+- 受控 citation 块中的原始 `[@key]` / `@key` 是长期持久真源；不要尝试从 `(Smith, 2024)`、`Smith (2024)`、`[1]` 或 `<sup>1</sup>` 逆向解析回 key
+- 统一引用源提取同时识别正文里的严格 `[@key]`、已知叙述式 `@key` 与受控 citation 注释中的原始语法；bibliography、统计和相关校验都应复用这套来源模型
 - bibliography 使用文末受控块 `<!-- bibtex-citation:bibliography:start --> ... <!-- bibtex-citation:bibliography:end -->` 做重复更新；删除操作也只删除本插件生成的受控块
 - bibliography 相关内部命名统一使用 `upsert` 语义；后续新增逻辑优先沿用这套命名
 
