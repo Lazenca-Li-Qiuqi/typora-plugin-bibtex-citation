@@ -11,6 +11,7 @@ import {
   escapeControlledCitationPayload,
   unescapeControlledCitationPayload,
 } from "./controlled-citations.js";
+import { renderCitationClusters } from "./processor.js";
 
 const pluginRequire = getPluginRequire();
 const { Cite } = pluginRequire("@citation-js/core");
@@ -29,26 +30,30 @@ export function renderCitationMarkdown(markdown, entries, templateName) {
     return createRenderResult(source);
   }
 
-  const cite = createCitationFormatter(citationSources, entryMap);
+  const citationItems = createCitationItems(citationSources, entryMap);
+  const cite = new Cite(citationItems);
   const citationOrder = createCitationOrder(citationSources, cite, templateName);
+  const citationKeyClusters = citationSources.map((citationSource) => (
+    sortCitationKeys(citationSource.keys, citationOrder)
+  ));
+  const renderedCitationClusters = renderCitationClusters(
+    citationItems,
+    citationKeyClusters,
+    templateName,
+  );
   let cursor = 0;
   let changed = false;
   let renderedBlocks = 0;
   let renderedKeys = 0;
   let output = "";
 
-  for (const citationSource of citationSources) {
+  for (let index = 0; index < citationSources.length; index += 1) {
+    const citationSource = citationSources[index];
     output += source.slice(cursor, citationSource.range.start);
 
     const nextBlock = buildControlledCitationBlock(
       citationSource.range.text,
-      renderCitationCluster(
-        cite,
-        citationSource,
-        citationSources,
-        citationOrder,
-        templateName,
-      ),
+      renderedCitationClusters[index],
     );
     const previousBlock = source.slice(citationSource.range.start, citationSource.range.end);
     output += nextBlock;
@@ -123,15 +128,11 @@ function collectValidCitationSources(markdown, entryMap) {
 }
 
 /**
- * 功能：基于整篇文档里所有合法引用块创建统一的 Citation.js 渲染器。
+ * 功能：收集整篇文档中实际引用到的唯一 CSL-JSON 条目。
  * 输入：合法引用源列表、BibTeX 条目映射。
- * 输出：可复用的 Cite 实例；若没有合法引用块则返回 null。
+ * 输出：按首次出现顺序排列的 CSL-JSON 条目数组。
  */
-function createCitationFormatter(citationSources, entryMap) {
-  if (!citationSources.length) {
-    return null;
-  }
-
+function createCitationItems(citationSources, entryMap) {
   const citationItems = new Map();
   for (const citationSource of citationSources) {
     for (const key of citationSource.keys) {
@@ -141,7 +142,7 @@ function createCitationFormatter(citationSources, entryMap) {
     }
   }
 
-  return new Cite(Array.from(citationItems.values()));
+  return Array.from(citationItems.values());
 }
 
 /**
@@ -150,7 +151,7 @@ function createCitationFormatter(citationSources, entryMap) {
  * 输出：key 到排序序号的映射；若无法生成则返回空映射。
  */
 function createCitationOrder(citationSources, cite, templateName) {
-  if (!cite || !citationSources.length) {
+  if (!citationSources.length) {
     return new Map();
   }
 
@@ -163,35 +164,6 @@ function createCitationOrder(citationSources, cite, templateName) {
   return new Map(
     bibliographyEntries.map(([id], index) => [id, index]),
   );
-}
-
-/**
- * 功能：在整篇文档上下文中渲染单个引用块，保证同作者同年的消歧结果稳定。
- * 输入：Cite 实例、当前引用源、整篇文档的合法引用源列表、引用排序映射、样式模板名。
- * 输出：当前引用块对应的文中引用字符串。
- */
-function renderCitationCluster(
-  cite,
-  citationSource,
-  citationSources,
-  citationOrder,
-  templateName,
-) {
-  const blockIndex = citationSources.indexOf(citationSource);
-  const citationsPre = citationSources
-    .slice(0, blockIndex)
-    .map((block) => sortCitationKeys(block.keys, citationOrder));
-  const citationsPost = citationSources
-    .slice(blockIndex + 1)
-    .map((block) => sortCitationKeys(block.keys, citationOrder));
-
-  return cite.format("citation", {
-    template: templateName,
-    format: "html",
-    entry: sortCitationKeys(citationSource.keys, citationOrder),
-    citationsPre,
-    citationsPost,
-  });
 }
 
 /**

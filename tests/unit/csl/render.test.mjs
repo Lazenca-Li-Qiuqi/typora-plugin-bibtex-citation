@@ -16,6 +16,9 @@ const { renderCitationMarkdown, restoreCitationMarkdown } = await import(
   createFreshModuleUrl("src/csl/render.js")
 );
 const { toCslItem } = await import(createFreshModuleUrl("src/csl/item.js"));
+const { renderCitationClusters } = await import(
+  createFreshModuleUrl("src/csl/processor.js")
+);
 const { getPluginRequire } = await import(createFreshModuleUrl("src/csl/runtime.js"));
 const {
   CITATION_START_MARKER,
@@ -331,6 +334,50 @@ test("renderCitationMarkdown 在所有真实 CSL 样式下都能产出非空 bib
 
     assert.ok(String(bibliography).trim().length > 0, `${styleFile} bibliography 输出为空`);
   }
+});
+
+test("renderCitationMarkdown 每次批量渲染只创建一次 citation processor", () => {
+  const config = pluginRequire("@citation-js/core").plugins.config.get("@csl");
+  const originalEngine = config.engine;
+  let engineCalls = 0;
+
+  config.engine = (...args) => {
+    engineCalls += 1;
+    return originalEngine(...args);
+  };
+
+  try {
+    const templateName = ensureCslTemplate(createMockPluginForStyle("apa.csl"));
+    const renderResult = renderCitationMarkdown(markdown, entries, templateName);
+
+    assert.equal(renderResult.renderedBlocks, 14);
+    assert.equal(engineCalls, 1);
+  } finally {
+    config.engine = originalEngine;
+  }
+});
+
+test("renderCitationClusters 与逐块 Citation.js 上下文渲染结果一致", () => {
+  const templateName = ensureCslTemplate(createMockPluginForStyle("apa.csl"));
+  const citationItems = entries.slice(0, 4).map((entry) => toCslItem(entry));
+  const citationKeyClusters = [
+    ["smith2024a-ocean", "smith2024b-land"],
+    ["doe2020background"],
+    ["smith2023history", "smith2024a-ocean"],
+  ];
+  const cite = new Cite(citationItems);
+  const expected = citationKeyClusters.map((keys, index) => cite.format("citation", {
+    template: templateName,
+    format: "html",
+    entry: keys,
+    citationsPre: citationKeyClusters.slice(0, index),
+    citationsPost: citationKeyClusters.slice(index + 1),
+  }));
+
+  assert.deepEqual(
+    renderCitationClusters(citationItems, citationKeyClusters, templateName),
+    expected,
+  );
 });
 
 test("restoreCitationMarkdown 能恢复由真实 CSL 样式生成的受控 citation 块", () => {
